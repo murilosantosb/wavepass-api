@@ -20,15 +20,24 @@ public class Evento {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String nome;
 
     private String artistas;
 
+    @Column(nullable = false)
     private String genero;
+    @Column(nullable = false)
     private String categoria;
+
     private int faixaEtaria;
+
+    @Column(nullable = false)
     private LocalDateTime dataHora;
+
+    @Column(nullable = false)
     private String local;
+
     private BigDecimal precoMinimo;
     private String corTema;
     private String imagemBanner;

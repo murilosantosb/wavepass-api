@@ -14,7 +14,6 @@ import java.util.List;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Retorna HTTP 404 NOT FOUND
     @ExceptionHandler(RecursoNaoEncontradoException.class)
     public ResponseEntity<ErroRespostaDTO> tratarRecursoNaoEncontrado(
             RecursoNaoEncontradoException ex,
@@ -31,7 +30,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resposta);
     }
 
-    // Retorna HTTP 400 BAD REQUEST
     @ExceptionHandler(RegraNegocioException.class)
     public ResponseEntity<ErroRespostaDTO> tratarRegraNegocio(
             RegraNegocioException ex,
@@ -48,7 +46,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resposta);
     }
 
-    // Retorna HTTP 400 BAD REQUEST com a lista de campos
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErroRespostaDTO> tratarErrosDeValidacao(
             MethodArgumentNotValidException ex,
@@ -71,7 +68,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resposta);
     }
 
-    // Retorna HTTP 500 INTERNAL SERVER ERROR
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErroRespostaDTO> tratarErroInesperado(
             Exception ex,
