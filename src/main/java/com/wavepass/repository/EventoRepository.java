@@ -14,9 +14,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     List<Evento> findByCategoriaIgnoreCase(String categoria);
 
-    List<Evento> findByDataAfterOrderByDataAsc(LocalDateTime data);
-
-    List<Evento> findByNomeContainingIgnoreCaseOrArtistaContainingIgnoreCase(String nome, String artista);
+    List<Evento> findByNomeContainingIgnoreCaseOrArtistasContainingIgnoreCase(String nome, String artistas);
 
     List<Evento> findByDataHoraAfterOrderByDataHoraAsc(LocalDateTime now);
 }

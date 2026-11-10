@@ -3,9 +3,9 @@ spring:
     name: wavePass
 
   datasource:
-    username: root
-    password: root
-    url: jdbc:mysql://localhost:3306/wavePass?createDatabaseIfNotExist=true
+    username: wavepass_user
+    password: wavepass123
+    url: jdbc:mysql://localhost:3306/wavepass_db?serverTimezone=UTC
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jackson:
@@ -13,6 +13,9 @@ spring:
       accept-case-insensitive-enums: true
 
   jpa:
-    database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
