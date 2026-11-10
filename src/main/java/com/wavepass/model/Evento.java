@@ -22,11 +22,7 @@ public class Evento {
 
     private String nome;
 
-    @ElementCollection
-    @CollectionTable(name = "evento_artistas", joinColumns = @JoinColumn(name = "evento_id"))
-    @Column(name = "nome_artista")
-    @Builder.Default
-    private List<String> artistas = new ArrayList<>();
+    private String artistas;
 
     private String genero;
     private String categoria;

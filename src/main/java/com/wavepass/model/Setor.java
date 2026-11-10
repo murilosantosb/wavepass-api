@@ -21,4 +21,8 @@ public class Setor {
 
     @Column(nullable = false)
     private BigDecimal preco;
+
+    @ManyToOne
+    @JoinColumn(name = "evento_id")
+    private Evento evento;
 }

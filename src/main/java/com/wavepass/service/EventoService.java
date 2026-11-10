@@ -1,6 +1,7 @@
 package com.wavepass.service;
 
 import com.wavepass.dto.EventoEntradaDTO;
+import com.wavepass.exception.RecursoNaoEncontradoException;
 import com.wavepass.model.Evento;
 import com.wavepass.model.Setor;
 import com.wavepass.repository.EventoRepository;
@@ -40,6 +41,7 @@ public class EventoService {
                 Setor setor = new Setor();
                 setor.setTipo(setorDto.tipo());
                 setor.setPreco(setorDto.preco());
+                setor.setEvento(evento);
                 return setor;
             }).toList();
 
@@ -59,7 +61,7 @@ public class EventoService {
 
     public Evento buscarPorId(Long id) {
         return eventoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Evento não encontrado com o ID: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Evento não encontrado com o ID: " + id));
     }
 
     public Evento atualizar(Long id, EventoEntradaDTO dto) {
@@ -88,6 +90,7 @@ public class EventoService {
                 Setor setor = new Setor();
                 setor.setTipo(setorDto.tipo());
                 setor.setPreco(setorDto.preco());
+                setor.setEvento(eventoAtualizado);
                 return setor;
             }).toList();
 

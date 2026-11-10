@@ -5,6 +5,7 @@ import com.wavepass.model.Evento;
 import com.wavepass.service.EventoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +23,7 @@ public class EventoController {
 
     @PostMapping
     @Operation(summary = "Cadastrar novo evento com setores e atrações")
-    public ResponseEntity<Evento> cadastrar(@RequestBody EventoEntradaDTO dto) {
+    public ResponseEntity<Evento> cadastrar(@RequestBody @Valid EventoEntradaDTO dto) {
         Evento novoEvento = eventoService.cadastrar(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(novoEvento);
     }
@@ -47,7 +48,7 @@ public class EventoController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Atualizar dados do evento")
-    public ResponseEntity<Evento> atualizar(@PathVariable Long id, @RequestBody EventoEntradaDTO dto) {
+    public ResponseEntity<Evento> atualizar(@PathVariable Long id, @RequestBody @Valid EventoEntradaDTO dto) {
         Evento eventoAtualizado = eventoService.atualizar(id, dto);
         return ResponseEntity.ok(eventoAtualizado);
     }

@@ -5,6 +5,7 @@ import com.wavepass.dto.UsuarioSaidaDTO;
 import com.wavepass.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +23,7 @@ public class UsuarioController {
 
     @PostMapping
     @Operation(summary = "Cadastrar novo usuário", description = "Cria um novo perfil de cliente no sistema.")
-    public ResponseEntity<UsuarioSaidaDTO> cadastrar(@RequestBody UsuarioEntradaDTO dto) {
+    public ResponseEntity<UsuarioSaidaDTO> cadastrar(@RequestBody @Valid UsuarioEntradaDTO dto) {
         UsuarioSaidaDTO novoUsuario = usuarioService.cadastrar(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(novoUsuario);
     }
@@ -41,7 +42,7 @@ public class UsuarioController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Atualizar usuário existente")
-    public ResponseEntity<UsuarioSaidaDTO> atualizar(@PathVariable Long id, @RequestBody UsuarioEntradaDTO dto) {
+    public ResponseEntity<UsuarioSaidaDTO> atualizar(@PathVariable Long id, @RequestBody @Valid UsuarioEntradaDTO dto) {
         UsuarioSaidaDTO usuarioAtualizado = usuarioService.atualizar(id, dto);
         return ResponseEntity.ok(usuarioAtualizado);
     }
