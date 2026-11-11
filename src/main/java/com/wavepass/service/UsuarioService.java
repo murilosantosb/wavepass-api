@@ -8,6 +8,7 @@ import com.wavepass.model.PerfilUsuario;
 import com.wavepass.model.Usuario;
 import com.wavepass.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.List;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public UsuarioSaidaDTO cadastrar(UsuarioEntradaDTO dto) {
         if (usuarioRepository.existsByEmail(dto.email())) {
@@ -32,7 +34,7 @@ public class UsuarioService {
                 .cpf(dto.cpf())
                 .dataNascimento(dto.dataNascimento())
                 .email(dto.email())
-                .senha(dto.senha())
+                .senha(passwordEncoder.encode(dto.senha()))
                 .perfil(dto.perfil() != null ? dto.perfil() : PerfilUsuario.CLIENTE)
                 .build();
 

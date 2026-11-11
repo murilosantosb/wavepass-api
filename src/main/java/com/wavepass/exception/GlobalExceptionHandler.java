@@ -4,6 +4,7 @@ import com.wavepass.dto.ErroRespostaDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -14,7 +15,14 @@ import java.util.List;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Retorna HTTP 404 NOT FOUND
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErroRespostaDTO> tratarAutenticacao(
+            AuthenticationException ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErroRespostaDTO(
+                LocalDateTime.now(), HttpStatus.UNAUTHORIZED.value(),
+                "E-mail ou senha inválidos", request.getRequestURI(), null));
+    }
+
     @ExceptionHandler(RecursoNaoEncontradoException.class)
     public ResponseEntity<ErroRespostaDTO> tratarRecursoNaoEncontrado(
             RecursoNaoEncontradoException ex,
@@ -31,7 +39,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resposta);
     }
 
-    // Retorna HTTP 400 BAD REQUEST
     @ExceptionHandler(RegraNegocioException.class)
     public ResponseEntity<ErroRespostaDTO> tratarRegraNegocio(
             RegraNegocioException ex,
@@ -48,7 +55,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resposta);
     }
 
-    // Retorna HTTP 400 BAD REQUEST com a lista de campos
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErroRespostaDTO> tratarErrosDeValidacao(
             MethodArgumentNotValidException ex,
@@ -71,7 +77,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resposta);
     }
 
-    // Retorna HTTP 500 INTERNAL SERVER ERROR
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErroRespostaDTO> tratarErroInesperado(
             Exception ex,

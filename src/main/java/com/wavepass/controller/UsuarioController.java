@@ -1,31 +1,46 @@
 package com.wavepass.controller;
 
+import com.wavepass.dto.LoginUsuarioDTO;
 import com.wavepass.dto.UsuarioEntradaDTO;
 import com.wavepass.dto.UsuarioSaidaDTO;
 import com.wavepass.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/usuario")
-@RequiredArgsConstructor
+@RequestMapping("/api/wavepass/usuario")
 @Tag(name = "Usuários", description = "Endpoints para gerenciamento e cadastro de usuários")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
+    private final AuthenticationManager authenticationManager;
 
-    @PostMapping
+    public UsuarioController(UsuarioService usuarioService, AuthenticationManager authenticationManager) {
+        this.usuarioService = usuarioService;
+        this.authenticationManager = authenticationManager;
+    }
+
+    @PostMapping("/register")
     @Operation(summary = "Cadastrar novo usuário", description = "Cria um novo perfil de cliente no sistema.")
-    public ResponseEntity<UsuarioSaidaDTO> cadastrar(@RequestBody @Valid UsuarioEntradaDTO dto) {
+    public ResponseEntity<UsuarioSaidaDTO> registrar(@RequestBody @Valid UsuarioEntradaDTO dto) {
         UsuarioSaidaDTO novoUsuario = usuarioService.cadastrar(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(novoUsuario);
+    }
+
+    @PostMapping("/login")
+    @Operation(summary = "Login usuário", description = "Realizar Login e autenticação do usuário")
+    public ResponseEntity<Void> login(@RequestBody @Valid LoginUsuarioDTO dto) {
+        authenticationManager.authenticate(
+                UsernamePasswordAuthenticationToken.unauthenticated(dto.email(), dto.senha()));
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping

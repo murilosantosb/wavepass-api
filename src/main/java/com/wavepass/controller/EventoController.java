@@ -14,12 +14,15 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/evento")
-@RequiredArgsConstructor
+@RequestMapping("/api/wavepass/evento")
 @Tag(name = "Eventos", description = "Endpoints para gestão e consulta de eventos")
 public class EventoController {
 
     private final EventoService eventoService;
+
+    public EventoController(EventoService eventoService) {
+        this.eventoService = eventoService;
+    }
 
     @PostMapping
     @Operation(summary = "Cadastrar novo evento com setores e atrações")
