@@ -7,10 +7,10 @@ import com.wavepass.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,9 +21,11 @@ import java.util.List;
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
+    private final AuthenticationManager authenticationManager;
 
-    public UsuarioController(UsuarioService usuarioService) {
+    public UsuarioController(UsuarioService usuarioService, AuthenticationManager authenticationManager) {
         this.usuarioService = usuarioService;
+        this.authenticationManager = authenticationManager;
     }
 
     @PostMapping("/register")
@@ -35,15 +37,10 @@ public class UsuarioController {
 
     @PostMapping("/login")
     @Operation(summary = "Login usuário", description = "Realizar Login e autenticação do usuário")
-    public ResponseEntity login(@RequestBody LoginUsuarioDTO dto) {
-
-        UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
-                dto.email(),
-                dto.senha()
-        );
-
+    public ResponseEntity<Void> login(@RequestBody @Valid LoginUsuarioDTO dto) {
+        authenticationManager.authenticate(
+                UsernamePasswordAuthenticationToken.unauthenticated(dto.email(), dto.senha()));
         return ResponseEntity.ok().build();
-
     }
 
     @GetMapping
