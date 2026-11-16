@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:login;DB_CLOSE_DELAY=-1",
@@ -37,7 +38,11 @@ class LoginTest {
     void aceitaCredenciaisValidas() throws Exception {
         when(usuarioRepository.findByEmail("teste@example.com")).thenReturn(Usuario.builder()
                 .email("teste@example.com").senha(passwordEncoder.encode("Senha123456")).build());
-        login("{\"email\":\"teste@example.com\",\"senha\":\"Senha123456\"}", 200);
+        mvc.perform(post("/api/wavepass/usuario/login").contentType("application/json")
+                        .content("{\"email\":\"teste@example.com\",\"senha\":\"Senha123456\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.senha").doesNotExist());
     }
 
     @Test

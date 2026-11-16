@@ -1,16 +1,20 @@
 package com.wavepass.controller;
 
 import com.wavepass.dto.LoginUsuarioDTO;
+import com.wavepass.dto.TokenDTO;
 import com.wavepass.dto.UsuarioEntradaDTO;
 import com.wavepass.dto.UsuarioSaidaDTO;
+import com.wavepass.model.Usuario;
+import com.wavepass.service.TokenService;
 import com.wavepass.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,14 +25,18 @@ import java.util.List;
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
+    private final TokenService tokenService;
     private final AuthenticationManager authenticationManager;
 
-    public UsuarioController(UsuarioService usuarioService, AuthenticationManager authenticationManager) {
+    public UsuarioController(UsuarioService usuarioService, TokenService tokenService,
+                             AuthenticationManager authenticationManager) {
         this.usuarioService = usuarioService;
+        this.tokenService = tokenService;
         this.authenticationManager = authenticationManager;
     }
 
     @PostMapping("/register")
+    @SecurityRequirements
     @Operation(summary = "Cadastrar novo usuário", description = "Cria um novo perfil de cliente no sistema.")
     public ResponseEntity<UsuarioSaidaDTO> registrar(@RequestBody @Valid UsuarioEntradaDTO dto) {
         UsuarioSaidaDTO novoUsuario = usuarioService.cadastrar(dto);
@@ -36,11 +44,19 @@ public class UsuarioController {
     }
 
     @PostMapping("/login")
+    @SecurityRequirements
     @Operation(summary = "Login usuário", description = "Realizar Login e autenticação do usuário")
-    public ResponseEntity<Void> login(@RequestBody @Valid LoginUsuarioDTO dto) {
-        authenticationManager.authenticate(
-                UsernamePasswordAuthenticationToken.unauthenticated(dto.email(), dto.senha()));
-        return ResponseEntity.ok().build();
+    public ResponseEntity<TokenDTO> login(@RequestBody @Valid LoginUsuarioDTO dto) {
+
+        UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
+                dto.email(),
+                dto.senha()
+        );
+
+        var authentication = authenticationManager.authenticate(token);
+        var usuario = (Usuario) authentication.getPrincipal();
+        return ResponseEntity.ok(new TokenDTO(tokenService.gerarToken(usuario)));
+
     }
 
     @GetMapping
