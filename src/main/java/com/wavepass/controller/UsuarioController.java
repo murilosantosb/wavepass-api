@@ -1,15 +1,20 @@
 package com.wavepass.controller;
 
 import com.wavepass.dto.LoginUsuarioDTO;
+import com.wavepass.dto.TokenDTO;
 import com.wavepass.dto.UsuarioEntradaDTO;
 import com.wavepass.dto.UsuarioSaidaDTO;
+import com.wavepass.model.Usuario;
+import com.wavepass.service.TokenService;
 import com.wavepass.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,12 +26,17 @@ import java.util.List;
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
+    private final TokenService tokenService;
+    private final AuthenticationManager manager;
 
-    public UsuarioController(UsuarioService usuarioService) {
+    public UsuarioController(UsuarioService usuarioService, TokenService tokenService, AuthenticationManager manager) {
         this.usuarioService = usuarioService;
+        this.tokenService = tokenService;
+        this.manager = manager;
     }
 
     @PostMapping("/register")
+    @SecurityRequirements
     @Operation(summary = "Cadastrar novo usuário", description = "Cria um novo perfil de cliente no sistema.")
     public ResponseEntity<UsuarioSaidaDTO> registrar(@RequestBody @Valid UsuarioEntradaDTO dto) {
         UsuarioSaidaDTO novoUsuario = usuarioService.cadastrar(dto);
@@ -34,15 +44,21 @@ public class UsuarioController {
     }
 
     @PostMapping("/login")
+    @SecurityRequirements
     @Operation(summary = "Login usuário", description = "Realizar Login e autenticação do usuário")
     public ResponseEntity login(@RequestBody LoginUsuarioDTO dto) {
 
-        UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
+        var authenticationToken = new UsernamePasswordAuthenticationToken(
                 dto.email(),
                 dto.senha()
         );
 
-        return ResponseEntity.ok().build();
+        var authentication = manager.authenticate(authenticationToken);
+        var usuario = (Usuario) authentication.getPrincipal();
+
+        var tokenJWT = tokenService.gerarToken(usuario);
+
+        return ResponseEntity.ok(new TokenDTO(tokenJWT));
 
     }
 

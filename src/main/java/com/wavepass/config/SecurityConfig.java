@@ -1,5 +1,7 @@
 package com.wavepass.config;
 
+import com.wavepass.service.AuthService;
+import com.wavepass.service.TokenService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -10,18 +12,24 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpStatus;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, TokenService tokenService,
+                                          AuthService authService) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm ->
                     sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(auth ->
                     auth
                             .requestMatchers(
@@ -33,7 +41,9 @@ public class SecurityConfig {
                                     "/v3/api-docs/**"
                             ).permitAll()
                             .anyRequest().authenticated()
-                );
+                )
+                .addFilterBefore(new SecurityFilter(tokenService, authService),
+                        UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
