@@ -28,6 +28,12 @@ public record EventoEntradaDTO(
         @NotBlank(message = "O local é obrigatório")
         String local,
 
+        @NotBlank(message = "A cidade é obrigatória")
+        String cidade,
+
+        @NotBlank(message = "O estado é obrigatório")
+        String estado,
+
         @NotNull(message = "O preço mínimo é obrigatório")
         @PositiveOrZero(message = "O preço mínimo não pode ser negativo")
         BigDecimal precoMinimo,

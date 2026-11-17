@@ -22,25 +22,25 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, TokenService tokenService,
-                                          AuthService authService) throws Exception {
+                                            AuthService authService) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm ->
-                    sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(auth ->
-                    auth
-                            .requestMatchers(
-                                    "/api/wavepass/usuario/login",
-                                    "/api/wavepass/usuario/register",
-                                    "/swagger-ui/**",
-                                    "/swagger-ui.html",
-                                    "/v3/api-docs",
-                                    "/v3/api-docs/**"
-                            ).permitAll()
-                            .anyRequest().authenticated()
+                        auth
+                                .requestMatchers(
+                                        "/api/wavepass/usuario/login",
+                                        "/api/wavepass/usuario/register",
+                                        "/swagger-ui/**",
+                                        "/swagger-ui.html",
+                                        "/v3/api-docs",
+                                        "/v3/api-docs/**"
+                                ).permitAll()
+                                .anyRequest().authenticated()
                 )
                 .addFilterBefore(new SecurityFilter(tokenService, authService),
                         UsernamePasswordAuthenticationFilter.class);

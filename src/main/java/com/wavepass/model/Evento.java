@@ -27,6 +27,7 @@ public class Evento {
 
     @Column(nullable = false)
     private String genero;
+
     @Column(nullable = false)
     private String categoria;
 
@@ -38,9 +39,19 @@ public class Evento {
     @Column(nullable = false)
     private String local;
 
+    @Column(nullable = false)
+    private String cidade;
+
+    @Column(nullable = false)
+    private String estado;
+
     private BigDecimal precoMinimo;
     private String corTema;
+
+    @Column(columnDefinition = "TEXT")
     private String imagemBanner;
+
+    @Column(columnDefinition = "TEXT")
     private String imagemCard;
 
     @Column(columnDefinition = "TEXT")

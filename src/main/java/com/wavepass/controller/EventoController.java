@@ -1,20 +1,25 @@
 package com.wavepass.controller;
 
 import com.wavepass.dto.EventoEntradaDTO;
+import com.wavepass.dto.EventoFiltroDTO;
 import com.wavepass.model.Evento;
 import com.wavepass.service.EventoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/wavepass/evento")
+@CrossOrigin(origins = "*")
 @Tag(name = "Eventos", description = "Endpoints para gestão e consulta de eventos")
 public class EventoController {
 
@@ -33,8 +38,11 @@ public class EventoController {
 
     @GetMapping
     @Operation(summary = "Listar todos os eventos")
-    public ResponseEntity<List<Evento>> listarTodos() {
-        return ResponseEntity.ok(eventoService.listarTodos());
+    public ResponseEntity<Page<Evento>> listarTodos(
+            @ParameterObject EventoFiltroDTO filtro,
+            @ParameterObject @PageableDefault(size = 12, sort = "dataHora", direction = Sort.Direction.ASC)Pageable pageable
+    ) {
+        return ResponseEntity.ok(eventoService.listarTodos(filtro, pageable));
     }
 
     @GetMapping("/proximos")

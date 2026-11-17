@@ -1,12 +1,17 @@
 package com.wavepass.service;
 
 import com.wavepass.dto.EventoEntradaDTO;
+import com.wavepass.dto.EventoFiltroDTO;
 import com.wavepass.exception.RecursoNaoEncontradoException;
 import com.wavepass.model.Evento;
 import com.wavepass.model.Setor;
 import com.wavepass.repository.EventoRepository;
+import com.wavepass.specification.EventoSpecification;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -27,6 +32,8 @@ public class EventoService {
                 .faixaEtaria(dto.faixaEtaria())
                 .dataHora(dto.dataHora())
                 .local(dto.local())
+                .cidade(dto.cidade())
+                .estado(dto.estado())
                 .precoMinimo(dto.precoMinimo())
                 .corTema(dto.corTema())
                 .imagemBanner(dto.imagemBanner())
@@ -51,8 +58,9 @@ public class EventoService {
         return eventoRepository.save(evento);
     }
 
-    public List<Evento> listarTodos() {
-        return eventoRepository.findAll();
+    @Transactional(readOnly = true)
+    public Page<Evento> listarTodos(EventoFiltroDTO filtro, Pageable pageable) {
+        return eventoRepository.findAll(EventoSpecification.comFiltros(filtro), pageable);
     }
 
     public List<Evento> listarProximosEventos() {
@@ -76,6 +84,8 @@ public class EventoService {
                 .faixaEtaria(dto.faixaEtaria())
                 .dataHora(dto.dataHora())
                 .local(dto.local())
+                .cidade(dto.cidade())
+                .estado(dto.estado())
                 .precoMinimo(dto.precoMinimo())
                 .corTema(dto.corTema())
                 .imagemBanner(dto.imagemBanner())
