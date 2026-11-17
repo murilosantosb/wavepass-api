@@ -7,21 +7,31 @@ import org.springframework.data.jpa.domain.Specification;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 public class EventoSpecification {
 
-    public static Specification<Evento> comFiltros(EventoFiltroDTO filtro){
-        return Specification
-                .where(nomeContem(filtro.nome()))
-                .and(generoContem(filtro.genero()))
-                .and(categoriaContem(filtro.categoria()))
-                .and(cidadeContem(filtro.cidade()))
-                .and(estadoIgual(filtro.estado()))
-                .and(dataContem(filtro.data()))
-                .and(precoMaxIgual(filtro.precoMax()));
+    public static Specification<Evento> comFiltros(EventoFiltroDTO filtro) {
+        if (filtro == null) {
+            return null;
+        }
+
+        return Stream.of(
+                        comNome(filtro.nome()),
+                        comGenero(filtro.genero()),
+                        comCategoria(filtro.categoria()),
+                        naData(filtro.data()),
+                        naCidade(filtro.cidade()),
+                        noEstado(filtro.estado()),
+                        comPrecoMaximo(filtro.precoMax())
+                )
+                .filter(Objects::nonNull)
+                .reduce(Specification::and)
+                .orElse(null);
     }
 
-    private static Specification<Evento> nomeContem(String nome){
+    private static Specification<Evento> comNome(String nome){
 
         if (nome == null || nome.isBlank()){
             return null;
@@ -31,7 +41,7 @@ public class EventoSpecification {
                 cb.like(cb.lower(root.get("nome")), "%" + nome.trim().toLowerCase() + "%");
     }
 
-    private static Specification<Evento> generoContem(String genero){
+    private static Specification<Evento> comGenero(String genero){
         if (genero == null || genero.isBlank()){
             return null;
         }
@@ -39,7 +49,7 @@ public class EventoSpecification {
             cb.like(cb.lower(root.get("genero")), "%" + genero.trim().toLowerCase() + "%");
     }
 
-    private static Specification<Evento> categoriaContem(String categoria) {
+    private static Specification<Evento> comCategoria(String categoria) {
         if(categoria == null || categoria.isBlank()){
             return null;
         }
@@ -48,7 +58,7 @@ public class EventoSpecification {
                 cb.like(cb.lower(root.get("categoria")), "%" + categoria.trim().toLowerCase() + "%");
     }
 
-    private static Specification<Evento> cidadeContem(String cidade) {
+    private static Specification<Evento> naCidade(String cidade) {
         if(cidade == null || cidade.isBlank()){
             return null;
         }
@@ -57,7 +67,7 @@ public class EventoSpecification {
                 cb.like(cb.lower(root.get("cidade")),"%" + cidade.trim().toLowerCase() + "%");
     }
 
-    private static Specification<Evento> estadoIgual(String estado) {
+    private static Specification<Evento> noEstado(String estado) {
         if(estado == null || estado.isBlank()){
             return null;
         }
@@ -66,7 +76,7 @@ public class EventoSpecification {
                 cb.equal(cb.upper(root.get("estado")), estado.trim().toUpperCase() );
     }
 
-    private static Specification<Evento> dataContem(LocalDate data) {
+    private static Specification<Evento> naData(LocalDate data) {
         if(data == null){
             return null;
         }
@@ -82,7 +92,7 @@ public class EventoSpecification {
         };
     }
 
-    private static Specification<Evento> precoMaxIgual(BigDecimal precoMax) {
+    private static Specification<Evento> comPrecoMaximo(BigDecimal precoMax) {
         if(precoMax == null){
             return null;
         }
