@@ -12,6 +12,18 @@ spring:
     mapper:
       accept-case-insensitive-enums: true
 
+  ai:
+    openai:
+      api-key: ${GROQ_API_KEY}
+      base-url: https://api.groq.com/openai/v1
+      chat:
+        options:
+          model: openai/gpt-oss-20b
+          temperature: 0.7
+
+  model:
+    chat: openai
+
   jpa:
     hibernate:
       ddl-auto: update
