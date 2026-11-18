@@ -7,10 +7,8 @@ public record EventoFiltroDTO(
         String nome,
         String genero,
         String categoria,
-        LocalDate data,
-        String local,
-        String cidade,
-        String estado,
+        String localizacao,
+        BigDecimal precoMin,
         BigDecimal precoMax
 ){
 }

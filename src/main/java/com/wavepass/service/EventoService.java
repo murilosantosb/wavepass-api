@@ -30,7 +30,6 @@ public class EventoService {
                 .genero(dto.genero())
                 .categoria(dto.categoria())
                 .faixaEtaria(dto.faixaEtaria())
-                .dataHora(dto.dataHora())
                 .local(dto.local())
                 .cidade(dto.cidade())
                 .estado(dto.estado())
@@ -63,9 +62,6 @@ public class EventoService {
         return eventoRepository.findAll(EventoSpecification.comFiltros(filtro), pageable);
     }
 
-    public List<Evento> listarProximosEventos() {
-        return eventoRepository.findByDataHoraAfterOrderByDataHoraAsc(LocalDateTime.now());
-    }
 
     public Evento buscarPorId(Long id) {
         return eventoRepository.findById(id)
@@ -82,7 +78,6 @@ public class EventoService {
                 .genero(dto.genero())
                 .categoria(dto.categoria())
                 .faixaEtaria(dto.faixaEtaria())
-                .dataHora(dto.dataHora())
                 .local(dto.local())
                 .cidade(dto.cidade())
                 .estado(dto.estado())

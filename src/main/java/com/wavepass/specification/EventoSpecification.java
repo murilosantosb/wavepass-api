@@ -13,17 +13,14 @@ import java.util.stream.Stream;
 public class EventoSpecification {
 
     public static Specification<Evento> comFiltros(EventoFiltroDTO filtro) {
-        if (filtro == null) {
-            return null;
-        }
+        if (filtro == null) return null;
 
         return Stream.of(
                         comNome(filtro.nome()),
                         comGenero(filtro.genero()),
                         comCategoria(filtro.categoria()),
-                        naData(filtro.data()),
-                        naCidade(filtro.cidade()),
-                        noEstado(filtro.estado()),
+                        naLocalizacao(filtro.localizacao()),
+                        comPrecoMinimo(filtro.precoMin()),
                         comPrecoMaximo(filtro.precoMax())
                 )
                 .filter(Objects::nonNull)
@@ -33,74 +30,58 @@ public class EventoSpecification {
 
     private static Specification<Evento> comNome(String nome){
 
-        if (nome == null || nome.isBlank()){
-            return null;
-        }
+        if (nome == null || nome.isBlank()) return null;
 
         return (root, query, cb) ->
                 cb.like(cb.lower(root.get("nome")), "%" + nome.trim().toLowerCase() + "%");
     }
 
     private static Specification<Evento> comGenero(String genero){
-        if (genero == null || genero.isBlank()){
-            return null;
-        }
+        if (genero == null || genero.isBlank()) return null;
+
         return (root, query, cb) ->
             cb.like(cb.lower(root.get("genero")), "%" + genero.trim().toLowerCase() + "%");
     }
 
     private static Specification<Evento> comCategoria(String categoria) {
-        if(categoria == null || categoria.isBlank()){
-            return null;
-        }
+        if(categoria == null || categoria.isBlank()) return null;
 
         return(root, query, cb) ->
                 cb.like(cb.lower(root.get("categoria")), "%" + categoria.trim().toLowerCase() + "%");
     }
 
-    private static Specification<Evento> naCidade(String cidade) {
-        if(cidade == null || cidade.isBlank()){
-            return null;
-        }
+    private static Specification<Evento> naLocalizacao(String localizacao) {
+        if(localizacao == null || localizacao.isBlank()) return null;
+
+        String termo = "%" + localizacao.trim().toLowerCase() + "%";
 
         return(root, query, cb) ->
-                cb.like(cb.lower(root.get("cidade")),"%" + cidade.trim().toLowerCase() + "%");
+                cb.or(
+                        cb.like(cb.lower(root.get("cidade")), termo),
+                        cb.like(cb.lower(root.get("estado")), termo)
+                );
     }
 
     private static Specification<Evento> noEstado(String estado) {
-        if(estado == null || estado.isBlank()){
-            return null;
-        }
+        if(estado == null || estado.isBlank()) return null;
 
         return(root, query, cb) ->
                 cb.equal(cb.upper(root.get("estado")), estado.trim().toUpperCase() );
     }
 
-    private static Specification<Evento> naData(LocalDate data) {
-        if(data == null){
-            return null;
-        }
+    private static Specification<Evento> comPrecoMinimo(BigDecimal precoMin){
+        if (precoMin == null) return null;
 
-        return(root, query, cb) -> {
-            LocalDateTime inicioDoDia = data.atStartOfDay();
-            LocalDateTime fimDoDia = data.plusDays(1).atStartOfDay();
-
-            return cb.and(
-                    cb.greaterThanOrEqualTo(root.get("dataHora"), inicioDoDia),
-                    cb.lessThan(root.get("dataHora"), fimDoDia)
-            );
-        };
+        return(root, query, cb) ->
+                cb.greaterThanOrEqualTo(root.get("precoMinimo"), precoMin);
     }
 
     private static Specification<Evento> comPrecoMaximo(BigDecimal precoMax) {
-        if(precoMax == null){
-            return null;
-        }
+        if(precoMax == null) return null;
 
         return(root, query, cb) ->
                 cb.lessThanOrEqualTo(root.get("precoMinimo"), precoMax);
     }
-
 }
 
 

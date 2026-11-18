@@ -45,12 +45,6 @@ public class EventoController {
         return ResponseEntity.ok(eventoService.listarTodos(filtro, pageable));
     }
 
-    @GetMapping("/proximos")
-    @Operation(summary = "Listar próximos eventos", description = "Alimenta a Home do App Mobile ordenando pela data futura.")
-    public ResponseEntity<List<Evento>> listarProximosEventos() {
-        return ResponseEntity.ok(eventoService.listarProximosEventos());
-    }
-
     @GetMapping("/{id}")
     @Operation(summary = "Buscar detalhes do evento por ID")
     public ResponseEntity<Evento> buscarPorId(@PathVariable Long id) {

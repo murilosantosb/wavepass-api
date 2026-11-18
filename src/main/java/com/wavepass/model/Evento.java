@@ -34,9 +34,6 @@ public class Evento {
     private int faixaEtaria;
 
     @Column(nullable = false)
-    private LocalDateTime dataHora;
-
-    @Column(nullable = false)
     private String local;
 
     @Column(nullable = false)
@@ -59,6 +56,11 @@ public class Evento {
 
     @Column(columnDefinition = "TEXT")
     private String descricaoCompleta;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "evento_id")
+    @Builder.Default
+    private List<SessaoEvento> sessoes = new ArrayList<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "evento_id")
