@@ -28,6 +28,16 @@ public record EventoEntradaDTO(
         @NotBlank(message = "O local é obrigatório")
         String local,
 
+        @NotBlank(message = "A cidade é obrigatória")
+        String cidade,
+
+        @NotBlank(message = "O estado é obrigatório")
+        @Pattern(
+                regexp = "^(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)$",
+                message = "Estado inválido. Informe a sigla (ex: SP, RJ, MG)"
+        )
+        String estado,
+
         @NotNull(message = "O preço mínimo é obrigatório")
         @PositiveOrZero(message = "O preço mínimo não pode ser negativo")
         BigDecimal precoMinimo,
