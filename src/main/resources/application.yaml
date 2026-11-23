@@ -23,4 +23,4 @@ spring:
 api:
   security:
     token:
-      secret: ${JWT_SECRET:wavepass-secret-key-dev-2026}
+      secret: ${JWT_SECRET}
