@@ -47,11 +47,9 @@ public class UsuarioController {
                 dto.email(),
                 dto.senha()
         );
-
         var authentication = authenticationManager.authenticate(token);
         var usuario = (Usuario) authentication.getPrincipal();
         return ResponseEntity.ok(new TokenDTO(tokenService.gerarToken(usuario)));
-
     }
 
     @GetMapping
