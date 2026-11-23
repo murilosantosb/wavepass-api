@@ -27,20 +27,28 @@ public class Evento {
 
     @Column(nullable = false)
     private String genero;
+
     @Column(nullable = false)
     private String categoria;
 
     private int faixaEtaria;
 
     @Column(nullable = false)
-    private LocalDateTime dataHora;
+    private String local;
 
     @Column(nullable = false)
-    private String local;
+    private String cidade;
+
+    @Column(nullable = false)
+    private String estado;
 
     private BigDecimal precoMinimo;
     private String corTema;
+
+    @Column(columnDefinition = "TEXT")
     private String imagemBanner;
+
+    @Column(columnDefinition = "TEXT")
     private String imagemCard;
 
     @Column(columnDefinition = "TEXT")
@@ -48,6 +56,11 @@ public class Evento {
 
     @Column(columnDefinition = "TEXT")
     private String descricaoCompleta;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "evento_id")
+    @Builder.Default
+    private List<SessaoEvento> sessoes = new ArrayList<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "evento_id")
