@@ -7,6 +7,7 @@ import com.wavepass.service.EventoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,19 +16,14 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/wavepass/evento")
-@CrossOrigin(origins = "*")
 @Tag(name = "Eventos", description = "Endpoints para gestão e consulta de eventos")
 public class EventoController {
 
     private final EventoService eventoService;
-
-    public EventoController(EventoService eventoService) {
-        this.eventoService = eventoService;
-    }
 
     @PostMapping
     @Operation(summary = "Cadastrar novo evento com setores e atrações")
@@ -40,9 +36,17 @@ public class EventoController {
     @Operation(summary = "Listar todos os eventos")
     public ResponseEntity<Page<Evento>> listarTodos(
             @ParameterObject EventoFiltroDTO filtro,
-            @ParameterObject @PageableDefault(size = 12, sort = "dataHora", direction = Sort.Direction.ASC)Pageable pageable
+            @ParameterObject @PageableDefault(size = 12, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.ok(eventoService.listarTodos(filtro, pageable));
+    }
+
+    @GetMapping("/meus-eventos")
+    @Operation(summary = "Listar os eventos cadastrados pelo administrador logado")
+    public ResponseEntity<Page<Evento>> listarMeusEventos(
+            @ParameterObject @PageableDefault(size = 12, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(eventoService.listarMeusEventos(pageable));
     }
 
     @GetMapping("/{id}")

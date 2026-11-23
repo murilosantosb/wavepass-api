@@ -1,5 +1,6 @@
 package com.wavepass.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -66,4 +67,9 @@ public class Evento {
     @JoinColumn(name = "evento_id")
     @Builder.Default
     private List<Setor> setores = new ArrayList<>();
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "criado_por_id")
+    private Usuario criadoPor;
 }

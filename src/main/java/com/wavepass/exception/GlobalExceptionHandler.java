@@ -4,6 +4,7 @@ import com.wavepass.dto.ErroRespostaDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -77,21 +78,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resposta);
     }
 
-    @ExceptionHandler(Exception.class)
+    @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErroRespostaDTO> tratarErroInesperado(
-            Exception ex,
+            AccessDeniedException ex,
             HttpServletRequest request) {
 
         ex.printStackTrace();
 
         ErroRespostaDTO resposta = new ErroRespostaDTO(
                 LocalDateTime.now(),
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                HttpStatus.FORBIDDEN.value(),
                 "Ocorreu um erro interno no servidor. Tente novamente mais tarde.",
                 request.getRequestURI(),
                 null
         );
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resposta);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(resposta);
     }
 }

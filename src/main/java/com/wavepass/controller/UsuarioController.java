@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/wavepass/usuario")
 @Tag(name = "Usuários", description = "Endpoints para gerenciamento e cadastro de usuários")
 public class UsuarioController {
@@ -27,13 +29,6 @@ public class UsuarioController {
     private final UsuarioService usuarioService;
     private final TokenService tokenService;
     private final AuthenticationManager authenticationManager;
-
-    public UsuarioController(UsuarioService usuarioService, TokenService tokenService,
-                             AuthenticationManager authenticationManager) {
-        this.usuarioService = usuarioService;
-        this.tokenService = tokenService;
-        this.authenticationManager = authenticationManager;
-    }
 
     @PostMapping("/register")
     @SecurityRequirements

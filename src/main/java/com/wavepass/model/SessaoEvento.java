@@ -2,10 +2,9 @@ package com.wavepass.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -13,6 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Builder
 public class SessaoEvento {
 
     @Id

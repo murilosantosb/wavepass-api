@@ -21,9 +21,11 @@ public record EventoEntradaDTO(
 
         int faixaEtaria,
 
-        @NotNull(message = "A data e hora são obrigatórias")
-        @FutureOrPresent(message = "A data do evento deve ser no presente ou futuro")
-        LocalDateTime dataHora,
+        @NotEmpty(message = "Informe pelo menos uma data para o evento")
+        List<
+                @NotNull(message = "A data não pode ser nula")
+                @FutureOrPresent(message = "A data do evento deve ser no presente ou futuro")
+                        LocalDateTime> datas,
 
         @NotBlank(message = "O local é obrigatório")
         String local,
@@ -49,5 +51,6 @@ public record EventoEntradaDTO(
         String descricaoCompleta,
 
         @Valid
+        @NotEmpty(message = "O evento deve ter pelo menos um setor")
         List<SetorEntradaDTO> setores
 ) {}
