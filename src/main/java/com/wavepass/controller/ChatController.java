@@ -1,8 +1,8 @@
 package com.wavepass.controller;
 
-import com.wavepass.model.Chat;
+import com.wavepass.dto.ChatEntradaDTO;
 import com.wavepass.service.ChatService;
-import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,9 +16,9 @@ public class ChatController {
         this.chatService = chatService;
     }
 
-    @GetMapping("/{pergunta}")
-    public ResponseEntity<String> chamadaAPI(@PathVariable String pergunta) {
+    @PostMapping("/mensagens")
+    public ResponseEntity<String> chamadaAPI(@RequestBody @Valid ChatEntradaDTO entrada) {
 
-        return ResponseEntity.ok(chatService.chamadaAPI(pergunta));
+        return ResponseEntity.ok(chatService.chamadaAPI(entrada.pergunta()));
     }
 }
