@@ -19,6 +19,6 @@ public class ChatController {
     @PostMapping("/mensagens")
     public ResponseEntity<String> chamadaAPI(@RequestBody @Valid ChatEntradaDTO entrada) {
 
-        return ResponseEntity.ok(chatService.chamadaAPI(entrada.pergunta()));
+        return ResponseEntity.ok(chatService.chamadaAPI(entrada));
     }
 }

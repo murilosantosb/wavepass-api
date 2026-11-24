@@ -7,6 +7,7 @@ public record EventoAiDTO(
         Long id,
         String nome,
         String artistas,
+        String categoria,
         LocalDateTime dataHora,
         String local,
         BigDecimal precoMinimo,

@@ -82,10 +82,10 @@ class GroqChatIntegrationTest {
         String segundaRequisicao = requisicoes.get(1);
         assertThat(segundaRequisicao).doesNotContain("reasoning_content");
         assertThat(JsonPath.<List<String>>read(segundaRequisicao, "$.messages[*].role"))
-                .containsExactly("system", "user", "assistant", "tool");
-        assertThat(JsonPath.<String>read(segundaRequisicao, "$.messages[2].tool_calls[0].function.name"))
+                .containsExactly("system", "system", "user", "assistant", "tool");
+        assertThat(JsonPath.<String>read(segundaRequisicao, "$.messages[3].tool_calls[0].function.name"))
                 .isEqualTo("listarProximosEventos");
-        assertThat(JsonPath.<String>read(segundaRequisicao, "$.messages[3].content"))
+        assertThat(JsonPath.<String>read(segundaRequisicao, "$.messages[4].content"))
                 .isEqualTo("[]");
     }
 }

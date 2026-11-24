@@ -19,6 +19,15 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler(AssistenteIndisponivelException.class)
+    public ResponseEntity<ErroRespostaDTO> tratarAssistenteIndisponivel(
+            AssistenteIndisponivelException ex, HttpServletRequest request) {
+        log.error("Falha ao gerar resposta do assistente", ex);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new ErroRespostaDTO(
+                LocalDateTime.now(), HttpStatus.SERVICE_UNAVAILABLE.value(),
+                ex.getMessage(), request.getRequestURI(), null));
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErroRespostaDTO> tratarAutenticacao(
             AuthenticationException ex, HttpServletRequest request) {
