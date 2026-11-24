@@ -26,4 +26,8 @@ spring:
 api:
   security:
     token:
-      secret: ${JWT_SECRET}
+      secret: ${JWT_SECRET:}
+    master:
+      email: ${WAVEPASS_MASTER_EMAIL:}
+      password: ${WAVEPASS_MASTER_PASSWORD:}
+

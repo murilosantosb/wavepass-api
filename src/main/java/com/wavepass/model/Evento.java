@@ -3,9 +3,7 @@ package com.wavepass.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,8 +27,9 @@ public class Evento {
     @Column(nullable = false)
     private String genero;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String categoria;
+    private CategoriaEvento categoria;
 
     private int faixaEtaria;
 
