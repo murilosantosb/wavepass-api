@@ -135,7 +135,7 @@ public class UsuarioService {
 
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public void deletar(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado com o ID: " + id));

@@ -46,7 +46,7 @@ public class EventoSpecification {
         if(categoria == null) return null;
 
         return(root, query, cb) ->
-                cb.equal(root.get("categoria"), "%" + categoria + "%");
+                cb.equal(root.get("categoria"), categoria);
     }
 
     private static Specification<Evento> naLocalizacao(String localizacao) {

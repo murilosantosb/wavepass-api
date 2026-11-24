@@ -4,6 +4,7 @@ import com.wavepass.model.PerfilUsuario;
 import com.wavepass.model.Usuario;
 import com.wavepass.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,15 +16,23 @@ public class DataInitializer implements CommandLineRunner {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${api.security.master.email}")
+    private String masterEmail;
+
+    @Value("${api.security.master.password}")
+    private String masterPassword;
+
     @Override
     public void run(String... args) {
-        String emailMaster = "admin@wavepass.com";
+        if (masterEmail == null || masterEmail.isBlank() || masterPassword == null || masterPassword.isBlank()) {
+            return;
+        }
 
-        if (!usuarioRepository.existsByEmail(emailMaster)) {
+        if (!usuarioRepository.existsByEmail(masterEmail)) {
             Usuario wavepassMaster = Usuario.builder()
                     .nome("Equipe Wavepass")
-                    .email(emailMaster)
-                    .senha(passwordEncoder.encode("Wavepass@2026"))
+                    .email(masterEmail)
+                    .senha(passwordEncoder.encode(masterPassword))
                     .perfil(PerfilUsuario.WAVEPASS)
                     .build();
 
