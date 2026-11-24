@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 public record EventoFiltroDTO(
         String nome,
         String genero,
-        CategoriaEvento categoria,
+        String categoria,
         String localizacao,
         BigDecimal precoMin,
         BigDecimal precoMax

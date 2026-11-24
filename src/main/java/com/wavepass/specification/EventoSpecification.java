@@ -42,11 +42,15 @@ public class EventoSpecification {
             cb.like(cb.lower(root.get("genero")), "%" + genero.trim().toLowerCase() + "%");
     }
 
-    private static Specification<Evento> comCategoria(CategoriaEvento categoria) {
-        if(categoria == null) return null;
+    private static Specification<Evento> comCategoria(String categoria) {
+        if (categoria == null || categoria.isBlank()) return null;
 
-        return(root, query, cb) ->
-                cb.equal(root.get("categoria"), categoria);
+        try {
+            CategoriaEvento enumCategoria = CategoriaEvento.valueOf(categoria.trim().toUpperCase());
+            return (root, query, cb) -> cb.equal(root.get("categoria"), enumCategoria);
+        } catch (IllegalArgumentException e) {
+            return (root, query, cb) -> cb.disjunction();
+        }
     }
 
     private static Specification<Evento> naLocalizacao(String localizacao) {
