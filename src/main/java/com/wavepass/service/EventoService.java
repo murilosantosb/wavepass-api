@@ -23,6 +23,7 @@ public class EventoService {
     private final EventoRepository eventoRepository;
     private final UsuarioRepository usuarioRepository;
 
+    @Transactional
     public Evento cadastrar(EventoEntradaDTO dto) {
         Evento evento = new Evento();
         evento.setCriadoPor(getUsuarioLogado());
@@ -108,7 +109,7 @@ public class EventoService {
             boolean eDono = evento.getCriadoPor() != null
                     && evento.getCriadoPor().getId().equals(usuarioLogado.getId());
             if (!eDono) {
-                throw new AccessDeniedException("Você só pode alterar ou excluir eventos cadastrados por você.");
+                throw new AccessDeniedException("Você só pode alterar ou excluir seus eventos cadastrados.");
             }
         }
     }

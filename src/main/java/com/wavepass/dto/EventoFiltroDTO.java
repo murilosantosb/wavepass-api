@@ -1,12 +1,13 @@
 package com.wavepass.dto;
 
+import com.wavepass.model.CategoriaEvento;
+
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
 public record EventoFiltroDTO(
         String nome,
         String genero,
-        String categoria,
+        CategoriaEvento categoria,
         String localizacao,
         BigDecimal precoMin,
         BigDecimal precoMax

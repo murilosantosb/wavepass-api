@@ -1,5 +1,6 @@
 package com.wavepass.dto;
 
+import com.wavepass.model.CategoriaEvento;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
@@ -16,8 +17,8 @@ public record EventoEntradaDTO(
         @NotBlank(message = "O gênero é obrigatório")
         String genero,
 
-        @NotBlank(message = "A categoria é obrigatória")
-        String categoria,
+        @NotNull(message = "A categoria é obrigatória")
+        CategoriaEvento categoria,
 
         int faixaEtaria,
 
