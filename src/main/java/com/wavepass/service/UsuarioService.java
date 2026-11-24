@@ -1,6 +1,7 @@
 package com.wavepass.service;
 
-import com.wavepass.dto.UsuarioEntradaDTO;
+import com.wavepass.dto.AdminEntradaDTO;
+import com.wavepass.dto.ClienteEntradaDTO;
 import com.wavepass.dto.UsuarioSaidaDTO;
 import com.wavepass.exception.RecursoNaoEncontradoException;
 import com.wavepass.exception.RegraNegocioException;
@@ -10,6 +11,7 @@ import com.wavepass.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -20,24 +22,49 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UsuarioSaidaDTO cadastrar(UsuarioEntradaDTO dto) {
-        if (usuarioRepository.existsByEmail(dto.email())) {
-            throw new RegraNegocioException("E-mail já cadastrado no sistema.");
-        }
+    @Transactional
+    public UsuarioSaidaDTO cadastrarCliente(ClienteEntradaDTO dto) {
+        validarEmailUnico(dto.email());
+
         if (usuarioRepository.existsByCpf(dto.cpf())) {
             throw new RegraNegocioException("CPF já cadastrado no sistema.");
         }
-        if (dto.cnpj() != null && !dto.cnpj().isBlank() && usuarioRepository.existsByCnpj(dto.cnpj())) {
+
+        Usuario cliente = Usuario.builder()
+                .nome(dto.nome())
+                .email(dto.email())
+                .cpf(dto.cpf())
+                .telefone(dto.telefone())
+                .dataNascimento(dto.dataNascimento())
+                .senha(passwordEncoder.encode(dto.senha()))
+                .perfil(PerfilUsuario.CLIENTE)
+                .build();
+
+        return UsuarioSaidaDTO.doModelo(usuarioRepository.save(cliente));
+    }
+
+    @Transactional
+    public UsuarioSaidaDTO cadastrarAdmin(AdminEntradaDTO dto){
+        validarEmailUnico(dto.email());
+
+        if (usuarioRepository.existsByCnpj(dto.cnpj())){
             throw new RegraNegocioException("CNPJ já cadastrado no sistema.");
         }
 
-        Usuario usuario = new Usuario();
-        preencherDados(usuario, dto);
+        Usuario admin = Usuario.builder()
+                .nome(dto.nome())
+                .nomeEmpresa(dto.nomeEmpresa())
+                .email(dto.email())
+                .cnpj(dto.cnpj())
+                .telefone(dto.telefone())
+                .senha(passwordEncoder.encode(dto.senha()))
+                .perfil(PerfilUsuario.ADMIN)
+                .build();
 
-        Usuario salvo = usuarioRepository.save(usuario);
-        return UsuarioSaidaDTO.doModelo(salvo);
+        return UsuarioSaidaDTO.doModelo(usuarioRepository.save(admin));
     }
 
+    @Transactional(readOnly = true)
     public List<UsuarioSaidaDTO> listarTodos() {
         return usuarioRepository.findAll()
                 .stream()
@@ -45,13 +72,15 @@ public class UsuarioService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public UsuarioSaidaDTO buscarPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado com o ID: " + id));
         return UsuarioSaidaDTO.doModelo(usuario);
     }
 
-    public UsuarioSaidaDTO atualizar(Long id, UsuarioEntradaDTO dto) {
+    @Transactional
+    public UsuarioSaidaDTO atualizarCliente(Long id, ClienteEntradaDTO dto) {
         Usuario usuarioExistente = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado com o ID: " + id));
 
@@ -63,78 +92,63 @@ public class UsuarioService {
                 && usuarioRepository.existsByCpf(dto.cpf())) {
             throw new RegraNegocioException("CPF já cadastrado no sistema.");
         }
+
+        usuarioExistente.setNome(dto.nome());
+        usuarioExistente.setEmail(dto.email());
+        usuarioExistente.setCpf(dto.cpf());
+        usuarioExistente.setTelefone(dto.telefone());
+        usuarioExistente.setDataNascimento(dto.dataNascimento());
+
+        if (dto.senha() != null && !dto.senha().isBlank()) {
+           usuarioExistente.setSenha(passwordEncoder.encode(dto.senha()));
+        }
+
+        return UsuarioSaidaDTO.doModelo(usuarioRepository.save(usuarioExistente));
+
+    }
+
+    @Transactional
+    public UsuarioSaidaDTO atualizarAdmin(Long id, AdminEntradaDTO dto) {
+        Usuario usuarioExistente = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado com o ID: " + id));
+
+        if (dto.email() != null && !dto.email().equals(usuarioExistente.getEmail())
+                && usuarioRepository.existsByEmail(dto.email())) {
+            throw new RegraNegocioException("E-mail já cadastrado no sistema.");
+        }
         if (dto.cnpj() != null && !dto.cnpj().isBlank() && !dto.cnpj().equals(usuarioExistente.getCnpj())
                 && usuarioRepository.existsByCnpj(dto.cnpj())) {
             throw new RegraNegocioException("CNPJ já cadastrado no sistema.");
         }
 
-        preencherDados(usuarioExistente, dto);
+        usuarioExistente.setNome(dto.nome());
+        usuarioExistente.setNomeEmpresa(dto.nomeEmpresa());
+        usuarioExistente.setEmail(dto.email());
+        usuarioExistente.setCnpj(dto.cnpj());
+        usuarioExistente.setTelefone(dto.telefone());
 
-        Usuario salvo = usuarioRepository.save(usuarioExistente);
-        return UsuarioSaidaDTO.doModelo(salvo);
+        if (dto.senha() != null && !dto.senha().isBlank()) {
+            usuarioExistente.setSenha(passwordEncoder.encode(dto.senha()));
+        }
+
+        return UsuarioSaidaDTO.doModelo(usuarioRepository.save(usuarioExistente));
 
     }
 
+    @Transactional(readOnly = true)
     public void deletar(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado com o ID: " + id));
         usuarioRepository.delete(usuario);
     }
 
-    private void preencherDados(Usuario usuario, UsuarioEntradaDTO dto) {
-        PerfilUsuario perfil = dto.perfil() != null
-                ? dto.perfil()
-                : (usuario.getPerfil() != null ? usuario.getPerfil() : PerfilUsuario.CLIENTE);
-
-        if (dto.nome() != null) {
-            usuario.setNome(dto.nome());
-        }
-        if (dto.email() != null) {
-            usuario.setEmail(dto.email());
-        }
-        if (dto.telefone() != null) {
-            usuario.setTelefone(dto.telefone());
-        }
-        if (dto.cpf() != null) {
-            usuario.setCpf(dto.cpf());
-        }
-        if (dto.dataNascimento() != null) {
-            usuario.setDataNascimento(dto.dataNascimento());
-        }
-        if (dto.cnpj() != null) {
-            usuario.setCnpj(dto.cnpj());
-        }
-        if (dto.nomeEmpresa() != null) {
-            usuario.setNomeEmpresa(dto.nomeEmpresa());
+    @Transactional
+    private void validarEmailUnico(String email) {
+        if (usuarioRepository.existsByEmail(email)) {
+            throw new RegraNegocioException("E-mail já cadastrado no sistema.");
         }
 
-        usuario.setPerfil(perfil);
-
-        if (dto.senha() != null && !dto.senha().isBlank()) {
-            usuario.setSenha(passwordEncoder.encode(dto.senha()));
-        }
-
-        validarCamposPorPerfil(usuario, perfil);
     }
 
-    private void validarCamposPorPerfil(Usuario usuario, PerfilUsuario perfil) {
-        if (perfil == PerfilUsuario.CLIENTE) {
-            if (usuario.getCpf() == null || usuario.getCpf().isBlank()) {
-                throw new RegraNegocioException("O CPF é obrigatório para cadastro de cliente.");
-            }
-            if (usuario.getDataNascimento() == null) {
-                throw new RegraNegocioException("A data de nascimento é obrigatória para cadastro de cliente.");
-            }
-            if (usuario.getTelefone() == null || usuario.getTelefone().isBlank()) {
-                throw new RegraNegocioException("O telefone é obrigatório para cadastro de cliente.");
-            }
-        } else if (perfil == PerfilUsuario.ADMIN) {
-            if (usuario.getCnpj() == null || usuario.getCnpj().isBlank()) {
-                throw new RegraNegocioException("O CNPJ da empresa é obrigatório para administrador.");
-            }
-            if (usuario.getNomeEmpresa() == null || usuario.getNomeEmpresa().isBlank()) {
-                throw new RegraNegocioException("O nome da empresa contratante é obrigatório para administrador.");
-            }
-        }
-    }
 }
+

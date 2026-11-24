@@ -26,6 +26,8 @@ public class TokenService {
             return JWT.create()
                     .withIssuer("API Wavepass")
                     .withSubject(usuario.getEmail())
+                    .withClaim("id", usuario.getId())
+                    .withClaim("perfil", usuario.getPerfil().name())
                     .withExpiresAt(dataExpiracao())
                     .sign(algoritmo);
         } catch(JWTCreationException exception) {

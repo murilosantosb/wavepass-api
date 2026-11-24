@@ -1,5 +1,10 @@
 package com.wavepass.dto;
 
+import com.wavepass.model.PerfilUsuario;
+
 public record TokenDTO(
-        String token
+        String token,
+        Long id,
+        String nome,
+        PerfilUsuario perfil
 ) {}

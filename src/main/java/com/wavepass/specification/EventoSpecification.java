@@ -1,12 +1,11 @@
 package com.wavepass.specification;
 
 import com.wavepass.dto.EventoFiltroDTO;
+import com.wavepass.model.CategoriaEvento;
 import com.wavepass.model.Evento;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -43,11 +42,11 @@ public class EventoSpecification {
             cb.like(cb.lower(root.get("genero")), "%" + genero.trim().toLowerCase() + "%");
     }
 
-    private static Specification<Evento> comCategoria(String categoria) {
-        if(categoria == null || categoria.isBlank()) return null;
+    private static Specification<Evento> comCategoria(CategoriaEvento categoria) {
+        if(categoria == null) return null;
 
         return(root, query, cb) ->
-                cb.like(cb.lower(root.get("categoria")), "%" + categoria.trim().toLowerCase() + "%");
+                cb.equal(root.get("categoria"), "%" + categoria + "%");
     }
 
     private static Specification<Evento> naLocalizacao(String localizacao) {

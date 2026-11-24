@@ -42,7 +42,7 @@ public class SecurityConfig {
 
                         .requestMatchers(
                                 "/api/wavepass/usuario/login",
-                                "/api/wavepass/usuario/register",
+                                "/api/wavepass/usuario/registerClient",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs",
@@ -61,8 +61,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/wavepass/evento/**")
                         .hasAnyRole("ADMIN", "WAVEPASS")
 
-                        .requestMatchers( "/api/wavepass/gerente/**", "/api/wavepass/admin/**")
-                        .hasAnyRole( "WAVEPASS")
+                        .requestMatchers(HttpMethod.GET, "/api/wavepass/usuario")
+                        .hasRole("WAVEPASS")
+
+                        .requestMatchers(HttpMethod.DELETE, "/api/wavepass/usuario/**")
+                        .hasRole("WAVEPASS")
+
+                        .requestMatchers(
+                                "/api/wavepass/gerente/**",
+                                "/api/wavepass/admin/**",
+                                "/api/wavepass/usuario/registerAdmin",
+                                "/api/wavepass/usuario/admin/**"
+                        ).hasRole("WAVEPASS")
 
                         .anyRequest().authenticated()
                 )
