@@ -6,10 +6,9 @@ spring:
     name: wavePass
 
   datasource:
-    username: ${SPRING_DATASOURCE_USERNAME:root}
-    password: ${SPRING_DATASOURCE_PASSWORD:root}
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/wavepass_db?createDatabaseIfNotExist=true}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
   jackson:
     mapper:
@@ -26,8 +25,7 @@ spring:
 api:
   security:
     token:
-      secret: ${JWT_SECRET:}
+      secret: ${JWT_SECRET}
     master:
-      email: ${WAVEPASS_MASTER_EMAIL:}
-      password: ${WAVEPASS_MASTER_PASSWORD:}
-
+      email: ${WAVEPASS_MASTER_EMAIL}
+      password: ${WAVEPASS_MASTER_PASSWORD}
