@@ -23,24 +23,14 @@ public class EventoTools {
             + "Retorna nome, artistas, categoria, data e hora, local, preço mínimo e classificação etária. "
             + "Para consultas com categoria, período ou preço, prefira buscarEventos.")
     public List<EventoAiDTO> listarProximosEventos() {
-        return eventoService.listarProximosEventos().stream()
-                .map(evento -> new EventoAiDTO(
-                        evento.getId(),
-                        evento.getNome(),
-                        evento.getArtistas(),
-                        evento.getCategoria(),
-                        evento.getDataHora(),
-                        evento.getLocal(),
-                        evento.getPrecoMinimo(),
-                        evento.getFaixaEtaria()))
-                .toList();
+        return eventoService.listarProximosEventos();
     }
 
     @Tool(description = "Busca eventos futuros no WavePass aplicando filtros no banco e ordenando por data. "
             + "Use para shows ou cinema neste fim de semana e consultas por preço. "
             + "Filtros omitidos não restringem a busca. O preço é o preço mínimo cadastrado, não de todos os ingressos.")
     public List<EventoAiDTO> buscarEventos(
-            @ToolParam(required = false, description = "Categoria cadastrada. Use Show para shows e Cinema para cinema.")
+            @ToolParam(required = false, description = "Categoria cadastrada. Use SHOW para shows e FILMES para cinema.")
             String categoria,
             @ToolParam(required = false, description = "Data inicial inclusiva no formato AAAA-MM-DD, no fuso America/Sao_Paulo.")
             LocalDate dataInicial,
@@ -53,10 +43,6 @@ public class EventoTools {
             @ToolParam(required = false, description = "true para até ou no máximo; false ou omitido para abaixo de ou menos de.")
             Boolean incluirPrecoMaximo) {
         return eventoService.buscarEventos(categoria, dataInicial, dataFinal, nesteFimDeSemana,
-                        precoMaximo, incluirPrecoMaximo).stream()
-                .map(evento -> new EventoAiDTO(evento.getId(), evento.getNome(), evento.getArtistas(),
-                        evento.getCategoria(), evento.getDataHora(), evento.getLocal(),
-                        evento.getPrecoMinimo(), evento.getFaixaEtaria()))
-                .toList();
+                precoMaximo, incluirPrecoMaximo);
     }
 }

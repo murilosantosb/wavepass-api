@@ -1,5 +1,7 @@
 package com.wavepass.model;
 
+import java.util.Locale;
+
 public enum CategoriaEvento {
     SHOW,
     TEATRO,
@@ -9,6 +11,11 @@ public enum CategoriaEvento {
     FILMES,
     GASTRONOMIA,
     GAMES,
-    OUTROS
+    OUTROS;
+
+    public static CategoriaEvento porDescricao(String descricao) {
+        String categoria = descricao.strip().toUpperCase(Locale.ROOT);
+        return "CINEMA".equals(categoria) ? FILMES : valueOf(categoria);
     }
+}
 

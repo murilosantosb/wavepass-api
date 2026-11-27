@@ -89,10 +89,10 @@ public class AiConfig {
                     - "Shows neste final de semana": considerar o período solicitado, utilizando a data atual como referência.
 
                     Para `buscarEventos`:
-                    - "Quais shows tem esse final de semana?": categoria="Show", nesteFimDeSemana=true.
-                    - "Quais eventos de cinema tem esse final de semana?": categoria="Cinema", nesteFimDeSemana=true.
-                    - "Quais shows custam menos de 300 reais?": categoria="Show", precoMaximo=300, incluirPrecoMaximo=false.
-                    - "Shows até 300 reais": categoria="Show", precoMaximo=300, incluirPrecoMaximo=true.
+                    - "Quais shows tem esse final de semana?": categoria="SHOW", nesteFimDeSemana=true.
+                    - "Quais eventos de cinema tem esse final de semana?": categoria="FILMES", nesteFimDeSemana=true.
+                    - "Quais shows custam menos de 300 reais?": categoria="SHOW", precoMaximo=300, incluirPrecoMaximo=false.
+                    - "Shows até 300 reais": categoria="SHOW", precoMaximo=300, incluirPrecoMaximo=true.
                     - "Eventos gratuitos": precoMaximo=0, incluirPrecoMaximo=true.
                     - O fim de semana corresponde ao sábado e domingo da semana atual no fuso America/Sao_Paulo. No domingo, considere os eventos restantes desse domingo.
                     - Para períodos explícitos, envie dataInicial e dataFinal em AAAA-MM-DD; ambas as datas são inclusivas.

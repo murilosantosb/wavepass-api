@@ -10,6 +10,8 @@ import com.wavepass.model.Usuario;
 import com.wavepass.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +28,7 @@ public class UsuarioService {
     public UsuarioSaidaDTO cadastrarCliente(ClienteEntradaDTO dto) {
         validarEmailUnico(dto.email());
 
-        if (usuarioRepository.existsByCpf(dto.cpf())) {
+        if (dto.cpf() != null && !dto.cpf().isBlank() && usuarioRepository.existsByCpf(dto.cpf())) {
             throw new RegraNegocioException("CPF já cadastrado no sistema.");
         }
 
@@ -47,7 +49,7 @@ public class UsuarioService {
     public UsuarioSaidaDTO cadastrarAdmin(AdminEntradaDTO dto){
         validarEmailUnico(dto.email());
 
-        if (usuarioRepository.existsByCnpj(dto.cnpj())){
+        if (dto.cnpj() != null && !dto.cnpj().isBlank() && usuarioRepository.existsByCnpj(dto.cnpj())){
             throw new RegraNegocioException("CNPJ já cadastrado no sistema.");
         }
 
@@ -74,6 +76,7 @@ public class UsuarioService {
 
     @Transactional(readOnly = true)
     public UsuarioSaidaDTO buscarPorId(Long id) {
+        validarAcesso(id);
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado com o ID: " + id));
         return UsuarioSaidaDTO.doModelo(usuario);
@@ -81,8 +84,11 @@ public class UsuarioService {
 
     @Transactional
     public UsuarioSaidaDTO atualizarCliente(Long id, ClienteEntradaDTO dto) {
+        validarAcesso(id);
         Usuario usuarioExistente = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado com o ID: " + id));
+
+        validarPerfil(usuarioExistente, PerfilUsuario.CLIENTE);
 
         if (dto.email() != null && !dto.email().equals(usuarioExistente.getEmail())
                 && usuarioRepository.existsByEmail(dto.email())) {
@@ -109,8 +115,13 @@ public class UsuarioService {
 
     @Transactional
     public UsuarioSaidaDTO atualizarAdmin(Long id, AdminEntradaDTO dto) {
+        if (getUsuarioLogado().getPerfil() != PerfilUsuario.WAVEPASS) {
+            throw new AccessDeniedException("Acesso restrito à equipe Wavepass.");
+        }
         Usuario usuarioExistente = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado com o ID: " + id));
+
+        validarPerfil(usuarioExistente, PerfilUsuario.ADMIN);
 
         if (dto.email() != null && !dto.email().equals(usuarioExistente.getEmail())
                 && usuarioRepository.existsByEmail(dto.email())) {
@@ -142,7 +153,31 @@ public class UsuarioService {
         usuarioRepository.delete(usuario);
     }
 
-    @Transactional
+    private void validarAcesso(Long id) {
+        Usuario usuario = getUsuarioLogado();
+        if (usuario.getPerfil() != PerfilUsuario.WAVEPASS && !id.equals(usuario.getId())) {
+            throw new AccessDeniedException("Você só pode acessar sua própria conta.");
+        }
+    }
+
+    private void validarPerfil(Usuario usuario, PerfilUsuario perfil) {
+        if (usuario.getPerfil() != perfil) {
+            throw new RegraNegocioException("O perfil do usuário não corresponde a esta operação.");
+        }
+    }
+
+    private Usuario getUsuarioLogado() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            throw new AccessDeniedException("Usuário não autenticado.");
+        }
+        if (auth.getPrincipal() instanceof Usuario usuario) {
+            return usuario;
+        }
+        return usuarioRepository.findUsuarioByEmail(auth.getName())
+                .orElseThrow(() -> new AccessDeniedException("Usuário não autenticado."));
+    }
+
     private void validarEmailUnico(String email) {
         if (usuarioRepository.existsByEmail(email)) {
             throw new RegraNegocioException("E-mail já cadastrado no sistema.");

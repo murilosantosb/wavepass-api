@@ -1,6 +1,7 @@
 package com.wavepass;
 
 import com.wavepass.model.Usuario;
+import com.wavepass.model.PerfilUsuario;
 import com.wavepass.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +38,7 @@ class LoginTest {
     @Test
     void aceitaCredenciaisValidas() throws Exception {
         when(usuarioRepository.findByEmail("teste@example.com")).thenReturn(Usuario.builder()
-                .email("teste@example.com").senha(passwordEncoder.encode("Senha123456")).build());
+                .perfil(PerfilUsuario.CLIENTE).email("teste@example.com").senha(passwordEncoder.encode("Senha123456")).build());
         mvc.perform(post("/api/wavepass/usuario/login").contentType("application/json")
                         .content("{\"email\":\"teste@example.com\",\"senha\":\"Senha123456\"}"))
                 .andExpect(status().isOk())
@@ -48,7 +49,7 @@ class LoginTest {
     @Test
     void rejeitaSenhaIncorretaEUsuarioInexistente() throws Exception {
         when(usuarioRepository.findByEmail("teste@example.com")).thenReturn(Usuario.builder()
-                .email("teste@example.com").senha(passwordEncoder.encode("Senha123456")).build());
+                .perfil(PerfilUsuario.CLIENTE).email("teste@example.com").senha(passwordEncoder.encode("Senha123456")).build());
         login("{\"email\":\"teste@example.com\",\"senha\":\"errada\"}", 401);
         login("{\"email\":\"inexistente@example.com\",\"senha\":\"errada\"}", 401);
     }

@@ -2,6 +2,8 @@ package com.wavepass;
 
 import com.jayway.jsonpath.JsonPath;
 import com.wavepass.model.Chat;
+import com.wavepass.model.CategoriaEvento;
+import com.wavepass.model.SessaoEvento;
 import com.wavepass.model.Evento;
 import com.wavepass.model.Mensagem;
 import com.wavepass.model.TipoMensagem;
@@ -274,7 +276,7 @@ class ChatIntegrationTest {
         limite.setPrecoMinimo(new BigDecimal("300.00"));
         eventoRepository.save(limite);
         Evento cinema = evento("Cinema", LocalDateTime.parse("2026-11-28T20:00:00"));
-        cinema.setCategoria("Cinema");
+        cinema.setCategoria(CategoriaEvento.FILMES);
         eventoRepository.save(cinema);
         eventoRepository.save(evento("Segunda", LocalDateTime.parse("2026-11-30T00:00:00")));
 
@@ -292,7 +294,7 @@ class ChatIntegrationTest {
                         .build())))).thenAnswer(invocacao -> {
             String resultado = resultadoFerramenta(invocacao.getArgument(0), "buscarEventos");
             assertThat(JsonPath.<List<String>>read(resultado, "$[*].nome")).containsExactly("Sábado");
-            assertThat(JsonPath.<String>read(resultado, "$[0].categoria")).isEqualTo("Show");
+            assertThat(JsonPath.<String>read(resultado, "$[0].categoria")).isEqualTo("SHOW");
             return resposta("Sábado custa R$ 80,00.");
         });
         mvc.perform(enviarMensagem()
@@ -328,6 +330,24 @@ class ChatIntegrationTest {
                 .extracting(com.wavepass.dto.EventoAiDTO::nome).containsExactly("Gratuito");
     }
 
+    @Test
+    void selecionaSessaoDoPeriodoSemDuplicarEvento() {
+        Evento evento = evento("Evento com sessoes", LocalDateTime.parse("2026-11-23T20:00:00"));
+        evento.setSessoes(new java.util.ArrayList<>(List.of(
+                SessaoEvento.builder().dataHora(LocalDateTime.parse("2026-11-23T20:00:00")).build(),
+                SessaoEvento.builder().dataHora(LocalDateTime.parse("2026-11-28T21:00:00")).build(),
+                SessaoEvento.builder().dataHora(LocalDateTime.parse("2026-11-28T19:00:00")).build(),
+                SessaoEvento.builder().dataHora(LocalDateTime.parse("2026-12-05T19:00:00")).build())));
+        eventoRepository.saveAndFlush(evento);
+        entityManager.clear();
+
+        assertThat(eventoTools.buscarEventos("SHOW", LocalDate.parse("2026-11-28"),
+                LocalDate.parse("2026-11-28"), null, null, null))
+                .singleElement().satisfies(resultado -> assertThat(resultado.dataHora())
+                        .isEqualTo(LocalDateTime.parse("2026-11-28T19:00:00")));
+        assertThat(eventoTools.buscarEventos("inexistente", null, null, null, null, null)).isEmpty();
+    }
+
     private MockHttpServletRequestBuilder enviarMensagem() {
         return post("/api/wavepass/chat/mensagens")
                 .header("Authorization", "Bearer " + tokenService.gerarToken(usuario))
@@ -342,8 +362,9 @@ class ChatIntegrationTest {
 
     private Evento evento(String nome, LocalDateTime dataHora) {
         return Evento.builder()
-                .nome(nome).artistas("Artista teste").genero("Rock").categoria("Show")
-                .dataHora(dataHora).local("Local teste").precoMinimo(new BigDecimal("80.00"))
+                .nome(nome).artistas("Artista teste").genero("Rock").categoria(CategoriaEvento.SHOW)
+                .sessoes(List.of(SessaoEvento.builder().dataHora(dataHora).build()))
+                .cidade("São Paulo").estado("SP").local("Local teste").precoMinimo(new BigDecimal("80.00"))
                 .faixaEtaria(16).descricaoCompleta("Conteúdo fora do DTO da IA").build();
     }
 

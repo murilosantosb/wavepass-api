@@ -46,7 +46,7 @@ public class EventoSpecification {
         if (categoria == null || categoria.isBlank()) return null;
 
         try {
-            CategoriaEvento enumCategoria = CategoriaEvento.valueOf(categoria.trim().toUpperCase());
+            CategoriaEvento enumCategoria = CategoriaEvento.porDescricao(categoria);
             return (root, query, cb) -> cb.equal(root.get("categoria"), enumCategoria);
         } catch (IllegalArgumentException e) {
             return (root, query, cb) -> cb.disjunction();
