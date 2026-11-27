@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
@@ -14,10 +15,17 @@ public record ChatEntradaDTO(
         String pergunta,
 
         @Size(max = 20, message = "O histórico deve ter no máximo 20 mensagens")
-        List<@NotNull @Valid ChatMensagemDTO> historico
+        List<@NotNull @Valid ChatMensagemDTO> historico,
+
+        @Positive(message = "O ID do chat deve ser positivo")
+        Long chatId
 ) {
     public ChatEntradaDTO {
         historico = historico == null ? List.of() : historico;
+    }
+
+    public ChatEntradaDTO(String pergunta, List<ChatMensagemDTO> historico) {
+        this(pergunta, historico, null);
     }
 
     @AssertTrue(message = "O histórico deve ter no máximo 40000 caracteres")

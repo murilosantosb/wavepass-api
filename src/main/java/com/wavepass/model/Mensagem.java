@@ -19,6 +19,7 @@ public class Mensagem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Lob
     @Column(nullable = false)
     private String conteudo;
 
@@ -32,7 +33,7 @@ public class Mensagem {
     @Column(nullable = false)
     private Integer ordem;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne
     @JoinColumn(name = "chat_id")
     private Chat chat;
 }

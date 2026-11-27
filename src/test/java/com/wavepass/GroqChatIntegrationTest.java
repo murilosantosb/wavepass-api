@@ -75,7 +75,7 @@ class GroqChatIntegrationTest {
 
     @Test
     void executaFerramentaSemReenviarReasoningContentAoProvedor() {
-        assertThat(chatService.chamadaAPI("Quais eventos disponíveis?"))
+        assertThat(chatService.responderPergunta("Quais eventos disponíveis?"))
                 .isEqualTo("Nenhum próximo evento cadastrado.");
 
         assertThat(requisicoes).hasSize(2);

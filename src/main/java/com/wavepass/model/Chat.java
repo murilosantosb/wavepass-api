@@ -23,20 +23,33 @@ public class Chat {
 
     private String titulo;
 
+    @Builder.Default
     @Column(nullable = false)
     private Boolean ativo = true;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 
     @Column(nullable = false)
     private LocalDateTime atualizadoEm;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 
+    @Builder.Default
     @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Mensagem> mensagens = new ArrayList<>();
+
+    @PrePersist
+    protected void aoCriar() {
+        this.criadoEm = LocalDateTime.now();
+        this.atualizadoEm = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void aoAtualizar() {
+        this.atualizadoEm = LocalDateTime.now();
+    }
 
 }

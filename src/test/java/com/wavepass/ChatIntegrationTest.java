@@ -1,11 +1,18 @@
 package com.wavepass;
 
 import com.jayway.jsonpath.JsonPath;
+import com.wavepass.model.Chat;
 import com.wavepass.model.Evento;
+import com.wavepass.model.Mensagem;
+import com.wavepass.model.TipoMensagem;
+import com.wavepass.model.Usuario;
 import com.wavepass.repository.EventoRepository;
 import com.wavepass.repository.ChatRepository;
 import com.wavepass.repository.MensagemRepository;
+import com.wavepass.repository.UsuarioRepository;
+import com.wavepass.service.TokenService;
 import com.wavepass.tool.EventoTools;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -20,8 +27,10 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -33,12 +42,12 @@ import java.time.ZoneId;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -51,7 +60,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "api.security.token.secret=local-chat-test-secret",
         "spring.ai.openai.api-key=local-chat-test-key"
 })
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc
 @Transactional
 class ChatIntegrationTest {
 
@@ -70,6 +79,17 @@ class ChatIntegrationTest {
     @Autowired
     private MensagemRepository mensagemRepository;
 
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private TokenService tokenService;
+
+    @Autowired
+    private EntityManager entityManager;
+
+    private Usuario usuario;
+
     @MockitoBean
     private Clock clock;
 
@@ -79,6 +99,7 @@ class ChatIntegrationTest {
     @BeforeEach
     void configurar() {
         eventoRepository.deleteAll();
+        usuario = criarUsuario("chat@example.com", "12345678901");
         when(clock.getZone()).thenReturn(ZoneId.of("America/Sao_Paulo"));
         when(clock.instant()).thenReturn(Instant.parse("2026-11-24T15:00:00Z"));
         when(chatModel.getOptions()).thenReturn(ToolCallingChatOptions.builder().build());
@@ -103,11 +124,10 @@ class ChatIntegrationTest {
             return resposta("O Show futuro está cadastrado no WavePass.");
         });
 
-        mvc.perform(post("/api/wavepass/chat/mensagens")
-                        .contentType("application/json")
+        mvc.perform(enviarMensagem()
                         .content("{\"pergunta\":\"Quais são os próximos eventos?\"}"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("O Show futuro está cadastrado no WavePass."));
+                .andExpect(jsonPath("$.resposta").value("O Show futuro está cadastrado no WavePass."));
     }
 
     @Test
@@ -117,19 +137,17 @@ class ChatIntegrationTest {
             return resposta("Não foram encontrados próximos eventos cadastrados no WavePass.");
         });
 
-        mvc.perform(post("/api/wavepass/chat/mensagens")
-                        .contentType("application/json")
+        mvc.perform(enviarMensagem()
                         .content("{\"pergunta\":\"Tem algum show?\"}"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Não foram encontrados próximos eventos cadastrados no WavePass."));
+                .andExpect(jsonPath("$.resposta").value("Não foram encontrados próximos eventos cadastrados no WavePass."));
     }
 
     @Test
     void rejeitaPerguntasAusentesEmBrancoOuMuitoLongasSemChamarModelo() throws Exception {
         for (String corpo : List.of("{}", "{\"pergunta\":\"   \"}",
                 "{\"pergunta\":\"" + "a".repeat(2001) + "\"}")) {
-            mvc.perform(post("/api/wavepass/chat/mensagens")
-                            .contentType("application/json").content(corpo))
+            mvc.perform(enviarMensagem().content(corpo))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.erros[0].campo").value("pergunta"));
         }
@@ -137,7 +155,8 @@ class ChatIntegrationTest {
     }
 
     @Test
-    void usaHistoricoTemporarioSemPersistirOuReutilizarEntreRequisicoes() throws Exception {
+    void usaHistoricoDoClienteEGravaApenasNovasMensagensEmOrdem() throws Exception {
+        String respostaLonga = "Você pode consultar eventos cadastrados. ".repeat(20);
         when(chatModel.call(any(Prompt.class))).thenAnswer(invocacao -> {
             Prompt prompt = invocacao.getArgument(0);
             assertThat(prompt.getInstructions().stream()
@@ -150,29 +169,62 @@ class ChatIntegrationTest {
                     .anySatisfy(texto -> assertThat(texto)
                             .contains("2026-11-24T12:00:00-03:00[America/Sao_Paulo]"));
             return resposta("Vou consultar os preços atuais.");
-        });
-
-        mvc.perform(post("/api/wavepass/chat/mensagens").contentType("application/json")
-                        .content("""
-                                {"pergunta":"Qual desses custa menos?","historico":[
-                                  {"tipo":"USER","conteudo":"Quais shows tem?"},
-                                  {"tipo":"ASSISTANT","conteudo":"Há dois shows."}]}
-                                """))
-                .andExpect(status().isOk());
-
-        when(chatModel.call(any(Prompt.class))).thenAnswer(invocacao -> {
+        }).thenAnswer(invocacao -> {
             Prompt prompt = invocacao.getArgument(0);
             assertThat(prompt.getInstructions().stream()
                     .filter(mensagem -> mensagem.getMessageType() != MessageType.SYSTEM)
                     .map(Message::getText).toList()).containsExactly("Como funciona o WavePass?");
-            return resposta("Você pode consultar eventos cadastrados.");
+            return resposta(respostaLonga);
         });
 
-        mvc.perform(post("/api/wavepass/chat/mensagens").contentType("application/json")
-                        .content("{\"pergunta\":\"Como funciona o WavePass?\"}"))
-                .andExpect(status().isOk());
-        assertThat(chatRepository.count()).isZero();
+        String corpo = mvc.perform(enviarMensagem().content("""
+                        {"pergunta":"Qual desses custa menos?","historico":[
+                          {"tipo":"USER","conteudo":"Quais shows tem?"},
+                          {"tipo":"ASSISTANT","conteudo":"Há dois shows."}]}
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resposta").value("Vou consultar os preços atuais."))
+                .andReturn().getResponse().getContentAsString();
+        long chatId = JsonPath.<Number>read(corpo, "$.chatId").longValue();
+
+        mvc.perform(enviarMensagem().content("""
+                        {"pergunta":"Como funciona o WavePass?","chatId":%d}
+                        """.formatted(chatId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.chatId").value(chatId))
+                .andExpect(jsonPath("$.resposta").value(respostaLonga));
+
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(chatRepository.findAll()).singleElement()
+                .satisfies(chat -> assertThat(chat.getUsuario().getId()).isEqualTo(usuario.getId()));
+        assertThat(mensagemRepository.findAll(Sort.by("ordem")))
+                .hasSize(4)
+                .allSatisfy(mensagem -> {
+                    assertThat(mensagem.getChat().getId()).isEqualTo(chatId);
+                    assertThat(mensagem.getCriadoEm()).isEqualTo(LocalDateTime.now(clock));
+                })
+                .extracting(Mensagem::getOrdem, Mensagem::getTipo, Mensagem::getConteudo)
+                .containsExactly(
+                        tuple(1, TipoMensagem.USER, "Qual desses custa menos?"),
+                        tuple(2, TipoMensagem.ASSISTANT, "Vou consultar os preços atuais."),
+                        tuple(3, TipoMensagem.USER, "Como funciona o WavePass?"),
+                        tuple(4, TipoMensagem.ASSISTANT, respostaLonga));
+    }
+
+    @Test
+    void rejeitaChatDeOutroUsuarioOuInexistenteSemChamarModelo() throws Exception {
+        Usuario outro = criarUsuario("outro@example.com", "12345678902");
+        Long chatId = chatRepository.save(Chat.builder().usuario(outro).build()).getId();
+
+        for (long id : List.of(chatId, Long.MAX_VALUE)) {
+            mvc.perform(enviarMensagem().content("""
+                            {"pergunta":"Tem shows?","chatId":%d}
+                            """.formatted(id)))
+                    .andExpect(status().isNotFound());
+        }
         assertThat(mensagemRepository.count()).isZero();
+        verify(chatModel, never()).call(any(Prompt.class));
     }
 
     @Test
@@ -187,7 +239,7 @@ class ChatIntegrationTest {
                         "{\"tipo\":\"USER\",\"conteudo\":\"Olá\"}")) + "]",
                 "[" + String.join(",", java.util.Collections.nCopies(4,
                         "{\"tipo\":\"ASSISTANT\",\"conteudo\":\"" + "a".repeat(11000) + "\"}")) + "]")) {
-            mvc.perform(post("/api/wavepass/chat/mensagens").contentType("application/json")
+            mvc.perform(enviarMensagem()
                             .content("{\"pergunta\":\"Tem shows?\",\"historico\":" + historico + "}"))
                     .andExpect(status().isBadRequest());
         }
@@ -197,7 +249,7 @@ class ChatIntegrationTest {
     @Test
     void retornaIndisponibilidadeQuandoProvedorFalhaOuNaoResponde() throws Exception {
         when(chatModel.call(any(Prompt.class))).thenThrow(new IllegalStateException("Falha no provedor"));
-        mvc.perform(post("/api/wavepass/chat/mensagens").contentType("application/json")
+        mvc.perform(enviarMensagem()
                         .content("{\"pergunta\":\"Tem shows?\"}"))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.mensagem").value(
@@ -207,9 +259,11 @@ class ChatIntegrationTest {
         when(chatModel.getOptions()).thenReturn(ToolCallingChatOptions.builder().build());
         when(chatModel.getDefaultOptions()).thenReturn(ToolCallingChatOptions.builder().build());
         when(chatModel.call(any(Prompt.class))).thenReturn(resposta(" "));
-        mvc.perform(post("/api/wavepass/chat/mensagens").contentType("application/json")
+        mvc.perform(enviarMensagem()
                         .content("{\"pergunta\":\"Tem shows?\"}"))
                 .andExpect(status().isServiceUnavailable());
+        assertThat(chatRepository.count()).isZero();
+        assertThat(mensagemRepository.count()).isZero();
     }
 
     @Test
@@ -241,10 +295,10 @@ class ChatIntegrationTest {
             assertThat(JsonPath.<String>read(resultado, "$[0].categoria")).isEqualTo("Show");
             return resposta("Sábado custa R$ 80,00.");
         });
-        mvc.perform(post("/api/wavepass/chat/mensagens").contentType("application/json")
+        mvc.perform(enviarMensagem()
                         .content("{\"pergunta\":\"Quais shows têm neste fim de semana por menos de 300 reais?\"}"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Sábado custa R$ 80,00."));
+                .andExpect(jsonPath("$.resposta").value("Sábado custa R$ 80,00."));
     }
 
     @Test
@@ -272,6 +326,18 @@ class ChatIntegrationTest {
         assertThat(eventoTools.buscarEventos(null, LocalDate.parse("2026-11-28"),
                 LocalDate.parse("2026-11-28"), null, BigDecimal.ZERO, true))
                 .extracting(com.wavepass.dto.EventoAiDTO::nome).containsExactly("Gratuito");
+    }
+
+    private MockHttpServletRequestBuilder enviarMensagem() {
+        return post("/api/wavepass/chat/mensagens")
+                .header("Authorization", "Bearer " + tokenService.gerarToken(usuario))
+                .contentType("application/json");
+    }
+
+    private Usuario criarUsuario(String email, String cpf) {
+        return usuarioRepository.save(Usuario.builder()
+                .nome("Usuário teste").email(email).cpf(cpf).telefone("11999999999")
+                .senha("senha-teste").dataNascimento(LocalDate.of(2000, 1, 1)).build());
     }
 
     private Evento evento(String nome, LocalDateTime dataHora) {
