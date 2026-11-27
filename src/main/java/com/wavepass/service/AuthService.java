@@ -1,19 +1,17 @@
 package com.wavepass.service;
 
 import com.wavepass.repository.UsuarioRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService implements UserDetailsService {
 
     private final UsuarioRepository usuarioRepository;
-
-    public AuthService(UsuarioRepository usuarioRepository) {
-        this.usuarioRepository = usuarioRepository;
-    }
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -24,8 +22,6 @@ public class AuthService implements UserDetailsService {
             throw new UsernameNotFoundException(email);
 
         }
-
         return user;
-
     }
 }

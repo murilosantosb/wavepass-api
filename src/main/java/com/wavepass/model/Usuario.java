@@ -1,6 +1,5 @@
 package com.wavepass.model;
 
-import com.wavepass.model.PerfilUsuario;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,14 +30,20 @@ public class Usuario implements UserDetails {
     @Column(nullable = false)
     private String nome;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String telefone;
 
-    @Column(nullable = false, unique = true, length = 11)
+    @Column(nullable = true, unique = true, length = 11)
     private String cpf;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDate dataNascimento;
+
+    @Column(nullable = true, unique = true, length = 14)
+    private String cnpj;
+
+    @Column(nullable = true)
+    private String nomeEmpresa;
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -62,9 +67,7 @@ public class Usuario implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(
-                new SimpleGrantedAuthority("ROLE_USER")
-        );
+        return List.of(new SimpleGrantedAuthority("ROLE_" + this.perfil.name()));
     }
 
     @Override

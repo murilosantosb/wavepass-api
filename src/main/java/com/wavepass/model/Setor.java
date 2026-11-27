@@ -1,5 +1,6 @@
 package com.wavepass.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -24,5 +25,6 @@ public class Setor {
 
     @ManyToOne
     @JoinColumn(name = "evento_id")
+    @JsonIgnore
     private Evento evento;
 }
