@@ -3,6 +3,9 @@ package com.wavepass.specification;
 import com.wavepass.dto.EventoFiltroDTO;
 import com.wavepass.model.CategoriaEvento;
 import com.wavepass.model.Evento;
+import com.wavepass.model.EstadoBrasil;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
@@ -46,30 +49,43 @@ public class EventoSpecification {
         if (categoria == null || categoria.isBlank()) return null;
 
         try {
-            CategoriaEvento enumCategoria = CategoriaEvento.valueOf(categoria.trim().toUpperCase());
+            CategoriaEvento enumCategoria = CategoriaEvento.porDescricao(categoria);
             return (root, query, cb) -> cb.equal(root.get("categoria"), enumCategoria);
         } catch (IllegalArgumentException e) {
             return (root, query, cb) -> cb.disjunction();
         }
     }
 
-    private static Specification<Evento> naLocalizacao(String localizacao) {
+    public static Specification<Evento> naLocalizacao(String localizacao) {
         if(localizacao == null || localizacao.isBlank()) return null;
 
-        String termo = "%" + localizacao.trim().toLowerCase() + "%";
+        String valor = EstadoBrasil.normalizar(localizacao);
+        String termo = "%" + valor.replace("\\", "\\\\")
+                .replace("%", "\\%").replace("_", "\\_") + "%";
+        EstadoBrasil estado = EstadoBrasil.porNomeOuSigla(localizacao);
 
-        return(root, query, cb) ->
-                cb.or(
-                        cb.like(cb.lower(root.get("cidade")), termo),
-                        cb.like(cb.lower(root.get("estado")), termo)
-                );
+        return (root, query, cb) -> {
+            var cidade = cb.like(semAcentos(cb, root.get("cidade")), termo, '\\');
+            var estadoNormalizado = semAcentos(cb, root.get("estado"));
+            if (estado != null) {
+                return cb.or(cidade,
+                        cb.equal(estadoNormalizado, EstadoBrasil.normalizar(estado.name())),
+                        cb.equal(estadoNormalizado, estado.nomeNormalizado()));
+            }
+            return cb.or(cidade, cb.like(estadoNormalizado, termo, '\\'));
+        };
     }
 
-    private static Specification<Evento> noEstado(String estado) {
-        if(estado == null || estado.isBlank()) return null;
-
-        return(root, query, cb) ->
-                cb.equal(cb.upper(root.get("estado")), estado.trim().toUpperCase() );
+    private static Expression<String> semAcentos(CriteriaBuilder cb, Expression<String> campo) {
+        Expression<String> resultado = cb.lower(cb.trim(campo));
+        String acentuados = "áàâãäéèêëíìîïóòôõöúùûüç";
+        String equivalentes = "aaaaaeeeeiiiiooooouuuuc";
+        for (int i = 0; i < acentuados.length(); i++) {
+            resultado = cb.function("replace", String.class, resultado,
+                    cb.literal(String.valueOf(acentuados.charAt(i))),
+                    cb.literal(String.valueOf(equivalentes.charAt(i))));
+        }
+        return resultado;
     }
 
     private static Specification<Evento> comPrecoMinimo(BigDecimal precoMin){

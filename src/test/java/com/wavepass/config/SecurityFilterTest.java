@@ -3,6 +3,7 @@ package com.wavepass.config;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.wavepass.model.Usuario;
+import com.wavepass.model.PerfilUsuario;
 import com.wavepass.service.AuthService;
 import com.wavepass.service.TokenService;
 import org.junit.jupiter.api.AfterEach;
@@ -27,7 +28,7 @@ class SecurityFilterTest {
     private final TokenService tokenService = new TokenService();
     private final AuthService authService = mock(AuthService.class);
     private final SecurityFilter filter = new SecurityFilter(tokenService, authService);
-    private final Usuario usuario = Usuario.builder().email("cliente@example.com").build();
+    private final Usuario usuario = Usuario.builder().email("cliente@example.com").perfil(PerfilUsuario.CLIENTE).build();
 
     @BeforeEach
     void configurar() {
@@ -53,7 +54,7 @@ class SecurityFilterTest {
             assertThat(authentication.isAuthenticated()).isTrue();
             assertThat(authentication.getPrincipal()).isSameAs(usuario);
             assertThat(authentication.getCredentials()).isNull();
-            assertThat(authentication.getAuthorities()).extracting("authority").containsExactly("ROLE_USER");
+            assertThat(authentication.getAuthorities()).extracting("authority").containsExactly("ROLE_CLIENTE");
         });
 
         assertThat(executou[0]).isTrue();

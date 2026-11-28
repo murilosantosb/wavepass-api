@@ -3,6 +3,8 @@ package com.wavepass.service;
 import com.wavepass.dto.ChatEntradaDTO;
 import com.wavepass.dto.ChatRespostaDTO;
 import com.wavepass.exception.AssistenteIndisponivelException;
+import com.wavepass.exception.AssistenteLimiteExcedidoException;
+import com.openai.errors.RateLimitException;
 import com.wavepass.exception.RecursoNaoEncontradoException;
 import com.wavepass.model.Chat;
 import com.wavepass.model.Mensagem;
@@ -33,14 +35,17 @@ public class ChatService {
     private final ChatRepository chatRepository;
     private final MensagemRepository mensagemRepository;
     private final TransactionTemplate transacao;
+    private final ChatRespostaFormatter respostaFormatter;
 
     public ChatService(ChatClient chatClient, Clock clock, ChatRepository chatRepository,
-                       MensagemRepository mensagemRepository, PlatformTransactionManager transactionManager) {
+                       MensagemRepository mensagemRepository, PlatformTransactionManager transactionManager,
+                       ChatRespostaFormatter respostaFormatter) {
         this.chatClient = chatClient;
         this.clock = clock;
         this.chatRepository = chatRepository;
         this.mensagemRepository = mensagemRepository;
         this.transacao = new TransactionTemplate(transactionManager);
+        this.respostaFormatter = respostaFormatter;
     }
 
     public ChatRespostaDTO responderPergunta(ChatEntradaDTO entrada, Usuario usuario) {
@@ -99,11 +104,33 @@ public class ChatService {
             if (resposta == null || resposta.isBlank()) {
                 throw new AssistenteIndisponivelException();
             }
-            return resposta;
+            return respostaFormatter.formatar(resposta);
         } catch (AssistenteIndisponivelException exception) {
             throw exception;
         } catch (RuntimeException exception) {
+            if (exception instanceof RateLimitException limite) {
+                throw new AssistenteLimiteExcedidoException(limite, obterEspera(limite));
+            }
             throw new AssistenteIndisponivelException(exception);
         }
+    }
+
+    private long obterEspera(RateLimitException limite) {
+        for (String valor : limite.headers().values("Retry-After")) {
+            try {
+                double segundos = Double.parseDouble(valor);
+                if (Double.isFinite(segundos) && segundos >= 0) {
+                    return Math.max(1, (long) Math.ceil(segundos));
+                }
+            } catch (NumberFormatException exception) {
+                try {
+                    var instante = ZonedDateTime.parse(valor, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+                    return Math.max(1, java.time.Duration.between(clock.instant(), instante).toSeconds());
+                } catch (java.time.format.DateTimeParseException formatoInvalido) {
+                    continue;
+                }
+            }
+        }
+        return 10;
     }
 }
