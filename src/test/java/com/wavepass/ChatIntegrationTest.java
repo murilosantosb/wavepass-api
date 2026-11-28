@@ -1,6 +1,8 @@
 package com.wavepass;
 
 import com.jayway.jsonpath.JsonPath;
+import com.openai.core.http.Headers;
+import com.openai.errors.RateLimitException;
 import com.wavepass.model.Chat;
 import com.wavepass.model.CategoriaEvento;
 import com.wavepass.model.SessaoEvento;
@@ -47,10 +49,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = {
@@ -109,6 +113,49 @@ class ChatIntegrationTest {
     }
 
     @Test
+    void informaLimiteTemporarioComTempoDeEsperaSemSalvarMensagens() throws Exception {
+        for (var caso : List.of(
+                java.util.Map.entry("0.01", "1"),
+                java.util.Map.entry("2", "2"),
+                java.util.Map.entry("Tue, 24 Nov 2026 15:00:05 GMT", "5"),
+                java.util.Map.entry("invalido", "10"))) {
+            doThrow(RateLimitException.builder()
+                    .headers(Headers.builder().put("Retry-After", caso.getKey()).build()).build())
+                    .when(chatModel).call(any(Prompt.class));
+
+            mvc.perform(enviarMensagem().header("Origin", "http://localhost:5173")
+                            .content("{\"pergunta\":\"Quais eventos temos?\"}"))
+                    .andExpect(status().isTooManyRequests())
+                    .andExpect(header().string("Retry-After", caso.getValue()))
+                    .andExpect(header().string("Access-Control-Expose-Headers", "Retry-After"))
+                    .andExpect(jsonPath("$.status").value(429))
+                    .andExpect(jsonPath("$.mensagem").value(
+                            "O assistente recebeu muitas solicitações. Aguarde alguns instantes e tente novamente."));
+        }
+        assertThat(chatRepository.count()).isZero();
+        assertThat(mensagemRepository.count()).isZero();
+    }
+
+    @Test
+    void devolveESalvaARespostaComFormatacaoCorrigida() throws Exception {
+        String original = "Foram encontrados 1 evento que atendem aos critérios.\n"
+                + "- **Preço:** a partir de R$ 45.00\n- **Classificação:** 0 anos";
+        String esperada = "Foi encontrado 1 evento que atende aos critérios.\n"
+                + "- **Preço:** a partir de R$ 45,00\n- **Classificação:** Livre";
+        when(chatModel.call(any(Prompt.class))).thenReturn(resposta(original));
+
+        mvc.perform(enviarMensagem().content("{\"pergunta\":\"Quais eventos temos no RJ?\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resposta").value(esperada));
+
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(mensagemRepository.findAll())
+                .filteredOn(mensagem -> mensagem.getTipo() == TipoMensagem.ASSISTANT)
+                .singleElement().satisfies(mensagem -> assertThat(mensagem.getConteudo()).isEqualTo(esperada));
+    }
+
+    @Test
     void consultaFerramentaEEnviaSomenteEventosFuturosAoModelo() throws Exception {
         eventoRepository.save(evento("Show passado", LocalDateTime.now(clock).minusDays(1)));
         Evento proximo = eventoRepository.save(evento("Show futuro", LocalDateTime.now(clock).plusDays(1)));
@@ -158,7 +205,7 @@ class ChatIntegrationTest {
 
     @Test
     void usaHistoricoDoClienteEGravaApenasNovasMensagensEmOrdem() throws Exception {
-        String respostaLonga = "Você pode consultar eventos cadastrados. ".repeat(20);
+        String respostaLonga = "Você pode consultar eventos cadastrados. ".repeat(3000);
         when(chatModel.call(any(Prompt.class))).thenAnswer(invocacao -> {
             Prompt prompt = invocacao.getArgument(0);
             assertThat(prompt.getInstructions().stream()
@@ -301,6 +348,79 @@ class ChatIntegrationTest {
                         .content("{\"pergunta\":\"Quais shows têm neste fim de semana por menos de 300 reais?\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resposta").value("Sábado custa R$ 80,00."));
+    }
+
+    @Test
+    void filtraLocalizacaoPorSiglaNomeCompletoECidadeSemAcentos() {
+        Evento paulista = evento("Show paulista", LocalDateTime.now(clock).plusDays(1));
+        paulista.setCidade("Campinas");
+        paulista.setEstado("SP");
+        eventoRepository.save(paulista);
+
+        Evento carioca = evento("Show carioca", LocalDateTime.now(clock).plusDays(1));
+        carioca.setCidade("Niterói");
+        carioca.setEstado("RJ");
+        eventoRepository.save(carioca);
+
+        Evento mineiro = evento("Show mineiro", LocalDateTime.now(clock).plusDays(1));
+        mineiro.setCidade("Belo Horizonte");
+        mineiro.setEstado("MG");
+        eventoRepository.saveAndFlush(mineiro);
+        entityManager.clear();
+
+        for (String localizacao : List.of("SP", "sp", "São Paulo", "sao paulo", "  SÃO PAULO  ", "Campinas")) {
+            assertThat(eventoTools.buscarEventos(null, null, null, null, null, null, localizacao))
+                    .extracting(com.wavepass.dto.EventoAiDTO::nome).containsExactly("Show paulista");
+        }
+        for (String localizacao : List.of("RJ", "rj", "Rio de Janeiro", "rio de janeiro", "Niterói", "niteroi")) {
+            assertThat(eventoTools.buscarEventos(null, null, null, null, null, null, localizacao))
+                    .singleElement().satisfies(resultado -> {
+                        assertThat(resultado.nome()).isEqualTo("Show carioca");
+                        assertThat(resultado.cidade()).isEqualTo("Niterói");
+                        assertThat(resultado.estado()).isEqualTo("RJ");
+                    });
+        }
+        assertThat(eventoTools.buscarEventos(null, null, null, null, null, null, "Curitiba")).isEmpty();
+        assertThat(eventoTools.buscarEventos(null, null, null, null, null, null, "%")).isEmpty();
+        assertThat(eventoTools.buscarEventos(null, null, null, null, null, null, " ")).hasSize(3);
+
+        assertThat(eventoRepository.findAll(com.wavepass.specification.EventoSpecification.comFiltros(
+                new com.wavepass.dto.EventoFiltroDTO(null, null, null, "São Paulo", null, null))))
+                .extracting(Evento::getNome).containsExactly("Show paulista");
+    }
+
+    @Test
+    void aplicaLocalizacaoDaChamadaDaFerramentaJuntoComCategoriaEPreco() throws Exception {
+        Evento paulista = evento("Show paulista", LocalDateTime.now(clock).plusDays(1));
+        paulista.setCidade("Campinas");
+        eventoRepository.save(paulista);
+        Evento carioca = evento("Show carioca", LocalDateTime.now(clock).plusDays(1));
+        carioca.setCidade("Niterói");
+        carioca.setEstado("RJ");
+        eventoRepository.save(carioca);
+        Evento caro = evento("Show caro", LocalDateTime.now(clock).plusDays(1));
+        caro.setPrecoMinimo(new BigDecimal("500"));
+        eventoRepository.save(caro);
+        Evento cinema = evento("Cinema paulista", LocalDateTime.now(clock).plusDays(1));
+        cinema.setCategoria(CategoriaEvento.FILMES);
+        eventoRepository.save(cinema);
+
+        when(chatModel.call(any(Prompt.class))).thenReturn(new ChatResponse(List.of(new Generation(
+                AssistantMessage.builder().content("").toolCalls(List.of(new AssistantMessage.ToolCall(
+                        "consulta-localizacao", "function", "buscarEventos",
+                        "{\"categoria\":\"SHOW\",\"localizacao\":\"São Paulo\",\"precoMaximo\":100,\"incluirPrecoMaximo\":true}")))
+                        .build())))).thenAnswer(invocacao -> {
+            String resultado = resultadoFerramenta(invocacao.getArgument(0), "buscarEventos");
+            assertThat(JsonPath.<List<String>>read(resultado, "$[*].nome")).containsExactly("Show paulista");
+            assertThat(JsonPath.<String>read(resultado, "$[0].cidade")).isEqualTo("Campinas");
+            assertThat(JsonPath.<String>read(resultado, "$[0].estado")).isEqualTo("SP");
+            return resposta("Encontrei um show em São Paulo por até R$ 100,00.");
+        });
+        mvc.perform(enviarMensagem().content("""
+                        {"pergunta":"Quais shows em São Paulo custam até 100 reais?"}
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resposta").value("Encontrei um show em São Paulo por até R$ 100,00."));
     }
 
     @Test

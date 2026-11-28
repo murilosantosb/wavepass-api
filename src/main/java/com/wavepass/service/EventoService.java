@@ -74,6 +74,19 @@ public class EventoService {
             Boolean nesteFimDeSemana,
             BigDecimal precoMaximo,
             Boolean incluirPrecoMaximo) {
+        return buscarEventos(categoria, dataInicial, dataFinal, nesteFimDeSemana,
+                precoMaximo, incluirPrecoMaximo, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EventoAiDTO> buscarEventos(
+            String categoria,
+            LocalDate dataInicial,
+            LocalDate dataFinal,
+            Boolean nesteFimDeSemana,
+            BigDecimal precoMaximo,
+            Boolean incluirPrecoMaximo,
+            String localizacao) {
 
         LocalDateTime agora = LocalDateTime.now(clock);
         LocalDateTime inicio = agora;
@@ -140,6 +153,11 @@ public class EventoService {
                     criterios.toArray(jakarta.persistence.criteria.Predicate[]::new));
         };
 
+        Specification<Evento> filtroLocalizacao = EventoSpecification.naLocalizacao(localizacao);
+        if (filtroLocalizacao != null) {
+            filtro = filtro.and(filtroLocalizacao);
+        }
+
         return eventoRepository.findAll(filtro).stream()
                 .map(evento -> new EventoAiDTO(
                         evento.getId(), evento.getNome(), evento.getArtistas(), evento.getCategoria(),
@@ -147,7 +165,8 @@ public class EventoService {
                                 .filter(data -> !data.isBefore(inicioConsulta))
                                 .filter(data -> fimConsulta == null || data.isBefore(fimConsulta))
                                 .min(Comparator.naturalOrder()).orElseThrow(),
-                        evento.getLocal(), evento.getPrecoMinimo(), evento.getFaixaEtaria()))
+                        evento.getLocal(), evento.getPrecoMinimo(), evento.getFaixaEtaria(),
+                        evento.getCidade(), evento.getEstado()))
                 .sorted(Comparator.comparing(EventoAiDTO::dataHora).thenComparing(EventoAiDTO::id))
                 .toList();
     }

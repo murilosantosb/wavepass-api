@@ -12,5 +12,7 @@ public record EventoAiDTO(
         LocalDateTime dataHora,
         String local,
         BigDecimal precoMinimo,
-        int faixaEtaria
+        int faixaEtaria,
+        String cidade,
+        String estado
 ) {}
